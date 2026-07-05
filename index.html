@@ -21,6 +21,7 @@
     .badge-sakit { background-color: #0dcaf0; color: #212529; }
     .badge-alfa { background-color: #dc3545; color: white; }
     .btn-status-absen { font-size: 13px; font-weight: bold; width: 32px; height: 32px; padding: 0; text-align: center; }
+    .btn-reset-absen { font-size: 13px; width: 32px; height: 32px; padding: 0; text-align: center; }
   </style>
 </head>
 <body>
@@ -150,7 +151,7 @@
 
         <div class="table-responsive shadow-sm rounded border">
           <table class="table table-striped table-sm text-center align-middle small mb-0 bg-white">
-            <thead class="table-dark"><tr><th>NIS</th><th>Nama Murid</th><th>Status</th></tr></thead>
+            <thead class="table-dark"><tr><th>NIS</th><th>Nama Murid</th><th>Status / Kendali</th></tr></thead>
             <tbody id="tabel-guru-manual-body"></tbody>
           </table>
         </div>
@@ -212,7 +213,7 @@
 
   <script>
     // MASUKKAN URL GOOGLE APP SCRIPT WEB APP HASIL DEPLOY TERBARU KAMU DI SINI
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDqzhbVdQADp4LKxXY5NXzY7Zz0pbTQXApqICCElwwDVLFB2JeojqV39zwsqckA_kL/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgUQ2VZlvef9D6OGYk65NM6ugxFvkUX4Bax91s-LRQAKf9TGxWCliRdK1ats9B0tiE/exec";
     
     var cacheData = {};
     var namaUserAktif = "";
@@ -280,6 +281,21 @@
       document.getElementById("guru-set-kelas").innerHTML = opt || "<option>-</option>";
     }
 
+    // Mengambil info status siswa hari ini di mapel tertentu untuk indikator tabel manual
+    function dapatkanStatusHariIni(nis) {
+      var kls = document.getElementById("guru-set-kelas").value;
+      var mpl = document.getElementById("guru-set-mapel").value;
+      var hariIniStr = new Date().toDateString();
+      
+      var cocok = (cacheData.riwayat || []).find(l => {
+        return l.Nis.toString() === nis.toString() &&
+               l.Kelas === kls &&
+               l.Mapel === mpl &&
+               new Date(l.Timestamp).toDateString() === hariIniStr;
+      });
+      return cocok ? cocok.status || cocok.Status : "";
+    }
+
     function getBadgeClass(status) {
       var st = (status || "").toLowerCase();
       if(st === "hadir") return "badge-hadir";
@@ -324,7 +340,7 @@
     }
 
     function aksiUbahFilterGuru() {
-      document.getElementById("input-cari-siswa").value = ""; // Reset kolom cari saat pindah kelas
+      document.getElementById("input-cari-siswa").value = "";
       muatSiswaAbsenManual();
       muatLaporanGuru();
     }
@@ -348,30 +364,32 @@
       if(filtered.length === 0) { tbody.innerHTML = "<tr><td colspan='3' class='p-3 text-muted'>Tidak ada murid terdaftar di kelas ini.</td></tr>"; return; }
       
       filtered.forEach(s => {
+        var statusSekarang = dapatkanStatusHariIni(s.nis);
+        var indikatorStatus = statusSekarang ? ` <span class="badge ${getBadgeClass(statusSekarang)}">${statusSekarang.substring(0,1)}</span>` : "";
+        
         tbody.innerHTML += `<tr class="baris-siswa-manual">
-          <td><strong>${s.nis}</strong></td><td class="text-start fw-semibold nama-siswa-kolom">${s.nama}</td>
+          <td><strong>${s.nis}</strong></td>
+          <td class="text-start fw-semibold nama-siswa-kolom">${s.nama}${indikatorStatus}</td>
           <td>
-            <button class="btn btn-success btn-status-absen rounded-circle me-1" onclick="eksekusiAbsen('${s.nis}','Hadir')">H</button>
-            <button class="btn btn-warning btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Izin')">I</button>
-            <button class="btn btn-info btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Sakit')">S</button>
-            <button class="btn btn-danger btn-status-absen rounded-circle" onclick="eksekusiAbsen('${s.nis}','Alfa')">A</button>
+            <div class="d-flex justify-content-center align-items-center">
+              <button class="btn btn-success btn-status-absen rounded-circle me-1" onclick="eksekusiAbsen('${s.nis}','Hadir')">H</button>
+              <button class="btn btn-warning btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Izin')">I</button>
+              <button class="btn btn-info btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Sakit')">S</button>
+              <button class="btn btn-danger btn-status-absen rounded-circle me-2" onclick="eksekusiAbsen('${s.nis}','Alfa')">A</button>
+              <button class="btn btn-sm btn-outline-secondary btn-reset-absen rounded-circle" title="Reset Absen Murid Ini" onclick="eksekusiResetAbsen('${s.nis}', '${s.nama}')">🔄</button>
+            </div>
           </td>
         </tr>`;
       });
     }
 
-    // PENINGKATAN: Fungsi filter pencarian live search
     function fiturCariSiswaManual() {
       var input = document.getElementById("input-cari-siswa").value.toLowerCase();
       var rows = document.getElementsByClassName("baris-siswa-manual");
       
       for (var i = 0; i < rows.length; i++) {
         var namaSiswa = rows[i].getElementsByClassName("nama-siswa-kolom")[0].innerText.toLowerCase();
-        if (namaSiswa.includes(input)) {
-          rows[i].style.display = "";
-        } else {
-          rows[i].style.display = "none";
-        }
+        if (namaSiswa.includes(input)) { rows[i].style.display = ""; } else { rows[i].style.display = "none"; }
       }
     }
 
@@ -386,11 +404,26 @@
         });
     }
 
+    // LOGIKA PRO OPSI 3: Reset / Pembatalan Data Absen Murid Tertentu
+    function eksekusiResetAbsen(nis, nama) {
+      if(!confirm(`Apakah Anda yakin ingin membatalkan/menghapus rekaman absensi hari ini untuk siswa: ${nama}?`)) return;
+      
+      var kls = document.getElementById("guru-set-kelas").value;
+      var mpl = document.getElementById("guru-set-mapel").value;
+      
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&status=Reset`)
+        .then(res => res.json())
+        .then(res => {
+          alert(res.message);
+          segarkanDataMaster();
+        }).catch(err => alert("Gagal memproses pembatalan ke backend."));
+    }
+
     async function eksekusiSetSemuaHadir() {
       var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
       var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
       
-      if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini untuk diabsen.");
+      if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
       if (!confirm(`Apakah Anda yakin memberi status HADIR untuk seluruh ${filteredSiswa.length} siswa di kelas ini?`)) return;
       
       var tombol = document.getElementById("btn-set-semua-hadir");
@@ -417,7 +450,6 @@
       var filtered = (cacheData.riwayat || []).filter(l => {
         var cocokKelas = (l.Kelas || "").toLowerCase() === kls;
         var cocokMapel = (l.Mapel || "").toLowerCase() === mpl;
-        
         var cocokBulan = true;
         if (bln !== "all" && l.Timestamp) {
           var tglObj = new Date(l.Timestamp);
@@ -436,7 +468,6 @@
         if (l.Timestamp) {
           tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         }
-        
         tbody.innerHTML += `<tr>
           <td><small class="fw-bold">${tglIndo}</small></td>
           <td class="text-start">${l.Nama}</td>
@@ -453,13 +484,6 @@
           html5QrcodeScanner = null;
           eksekusiAbsen(text, "Hadir");
         });
-      }
-    }
-
-    function cancelKamera() {
-      if(html5QrcodeScanner) {
-        html5QrcodeScanner.clear();
-        html5QrcodeScanner = null;
       }
     }
 

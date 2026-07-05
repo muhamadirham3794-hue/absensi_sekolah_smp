@@ -25,6 +25,7 @@
     .btn-status-absen { font-size: 13px; font-weight: bold; width: 32px; height: 32px; padding: 0; text-align: center; }
     .btn-reset-absen { font-size: 13px; width: 32px; height: 32px; padding: 0; text-align: center; }
     .chart-container { position: relative; height: 220px; width: 100%; }
+    .persentase-teks { font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 5px; }
   </style>
 </head>
 <body>
@@ -338,7 +339,6 @@
       document.getElementById("admin-qr-kelas").innerHTML = opt || "<option>-</option>";
       document.getElementById("guru-set-kelas").innerHTML = opt || "<option>-</option>";
       
-      // Mengisi filter kelas khusus pada grafik analisis
       var optChartKelas = `<option value="all">Semua Kelas</option>` + opt;
       var selectChartKelas = document.getElementById("admin-chart-kelas");
       
@@ -358,6 +358,25 @@
       return cocok ? cocok.status || cocok.Status : "";
     }
 
+    // FUNGSI UTAMA OPSI 1: Menghitung persentase kehadiran akumulatif per murid
+    function hitungPersentaseSiswa(nis) {
+      var logSiswa = (cacheData.riwayat || []).filter(l => l.Nis.toString() === nis.toString());
+      if(logSiswa.length === 0) return { teks: "100%", kelasWarna: "bg-success text-white" };
+      
+      var totalHadir = logSiswa.filter(l => l.Status.toLowerCase() === "hadir").length;
+      var persentase = Math.round((totalHadir / logSiswa.length) * 100);
+      
+      // Berikan warna indikator peringatan berdasarkan tingkat persentase kehadiran
+      var kelasWarna = "bg-success text-white"; // Aman (>85%)
+      if(persentase <= 75) {
+        kelasWarna = "bg-danger text-white"; // Waspada/Bahaya (Sering bolos)
+      } else if(persentase <= 85) {
+        kelasWarna = "bg-warning text-dark"; // Peringatan awal
+      }
+      
+      return { teks: persentase + "%", kelasWarna: kelasWarna };
+    }
+
     function getBadgeClass(status) {
       var st = (status || "").toLowerCase();
       if(st === "hadir") return "badge-hadir";
@@ -375,7 +394,6 @@
       var filterBulan = document.getElementById("admin-chart-bulan").value;
       var hariIniStr = new Date().toDateString();
       
-      // 1. PROSES PENYARINGAN DATA UNTUK GRAFIK
       var logTersaring = (cacheData.riwayat || []).filter(l => {
         var cocokKelas = (filterKelas === "all") || (l.Kelas === filterKelas);
         var cocokWaktu = true;
@@ -387,7 +405,6 @@
         return cocokKelas && cocokWaktu;
       });
       
-      // 2. HITUNG DISTRIBUSI LOG STATUS
       var jmlHadir = logTersaring.filter(l => l.Status.toLowerCase() === "hadir").length;
       var jmlIzin  = logTersaring.filter(l => l.Status.toLowerCase() === "izin").length;
       var jmlSakit = logTersaring.filter(l => l.Status.toLowerCase() === "sakit").length;
@@ -404,10 +421,8 @@
       var logGlobalHariIni = (cacheData.riwayat || []).filter(l => new Date(l.Timestamp).toDateString() === hariIniStr);
       document.getElementById("stat-hadir-hari-ini").innerText = logGlobalHariIni.filter(l => l.Status.toLowerCase() === "hadir").length;
       
-      // 3. GAMBAR GRAFIK BARU
       renderGrafikDonut(jmlHadir, jmlIzin, jmlSakit, jmlAlfa, jmlBelumAbsen, filterBulan);
       
-      // 5 aktivitas terakhir
       var tbody = document.getElementById("log-aktivitas-admin");
       tbody.innerHTML = "";
       var limaTerakhir = (cacheData.riwayat || []).slice(-5).reverse();
@@ -504,9 +519,15 @@
         var statusSekarang = dapatkanStatusHariIni(s.nis);
         var indikatorStatus = statusSekarang ? ` <span class="badge ${getBadgeClass(statusSekarang)}">${statusSekarang.substring(0,1)}</span>` : "";
         
+        // INTEGRASI OPSI 1: Ambil data analisis persentase kehadiran murid saat ini
+        var analisisPersentase = hitungPersentaseSiswa(s.nis);
+        
         tbody.innerHTML += `<tr class="baris-siswa-manual">
           <td><strong>${s.nis}</strong></td>
-          <td class="text-start fw-semibold nama-siswa-kolom">${s.nama}${indicatorsStatus || indikatorStatus}</td>
+          <td class="text-start fw-semibold nama-siswa-kolom">
+            ${s.nama}${indikatorStatus}
+            <span class="persentase-teks ${analisisPersentase.kelasWarna}">${analisisPersentase.teks}</span>
+          </td>
           <td>
             <div class="d-flex justify-content-center align-items-center">
               <button class="btn btn-success btn-status-absen rounded-circle me-1" onclick="eksekusiAbsen('${s.nis}','Hadir')">H</button>

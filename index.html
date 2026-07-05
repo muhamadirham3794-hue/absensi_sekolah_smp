@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Absensi Digital QR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { background-color: #f4f6f9; }
+    .card-login { max-width: 400px; margin: 100px auto; }
+    .dashboard-panel { display: none; }
+    .badge-hadir { background-color: #198754; color: white; }
+    .badge-izin { background-color: #ffc107; color: #212529; }
+    .badge-sakit { background-color: #0dcaf0; color: #212529; }
+    .badge-alfa { background-color: #dc3545; color: white; }
+  </style>
+</head>
+<body>
+
+  <div class="container p-3">
+    <div id="panel-login" class="card card-login shadow border-0">
+      <div class="card-body text-center p-4">
+        <h4 class="fw-bold text-primary mb-3">🏫 ABSENSI DIGITAL</h4>
+        <p class="text-muted small">Silakan masukkan PIN Petugas/Guru untuk masuk</p>
+        <div class="mb-3">
+          <input type="password" id="input-pin" class="form-control text-center fw-bold fs-4" placeholder="••••">
+        </div>
+        <button class="btn btn-primary w-100 fw-bold" onclick="prosesLogin()">MASUK SISTEM</button>
+      </div>
+    </div>
+
+    <div id="panel-admin" class="dashboard-panel card shadow border-0 p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <div>
+          <h4 class="fw-bold text-danger mb-0">🛠️ Dashboard Admin</h4>
+          <small id="nama-admin-aktif" class="text-muted fw-semibold"></small>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="keluarSistem()">Keluar</button>
+      </div>
+
+      <div class="row text-center mb-4">
+        <div class="col-6">
+          <div class="bg-light p-3 rounded border">
+            <small class="text-muted d-block">Total Siswa</small>
+            <h3 id="stat-total-siswa" class="fw-bold text-dark mb-0">0</h3>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="bg-light p-3 rounded border">
+            <small class="text-muted d-block">Hadir Hari Ini</small>
+            <h3 id="stat-hadir-hari-ini" class="fw-bold text-success mb-0">0</h3>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold">⏱️ 5 Log Aktivitas Terakhir</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered bg-white text-center small">
+          <thead class="table-dark"><tr><th>Nama</th><th>Kelas</th><th>Mapel</th><th>Status</th></tr></thead>
+          <tbody id="log-aktivitas-admin"></tbody>
+        </table>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6"><button class="btn btn-sm btn-dark w-100" data-bs-toggle="modal" data-bs-target="#modalSiswa">+ Siswa Baru</button></div>
+        <div class="col-6"><button class="btn btn-sm btn-warning w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalGuru">+ Guru Baru</button></div>
+      </div>
+
+      <div class="border p-3 rounded bg-light">
+        <h6 class="fw-bold">🖨️ Cetak QR Code Siswa</h6>
+        <div class="row g-2">
+          <div class="col-6">
+            <select id="admin-qr-kelas" class="form-select form-select-sm" onchange="muatDaftarQRAdmin()"></select>
+          </div>
+          <div class="col-6">
+            <select id="admin-qr-limit" class="form-select form-select-sm" onchange="muatDaftarQRAdmin()">
+              <option value="10">Maks 10 Data</option>
+              <option value="30">Maks 30 Data</option>
+              <option value="50">Maks 50 Data</option>
+            </select>
+          </div>
+        </div>
+        <div id="box-cetak-qr" class="row row-cols-3 g-2 mt-2 bg-white p-2 rounded text-center small" style="max-height:250px; overflow-y:auto;"></div>
+      </div>
+      <button class="btn btn-outline-primary btn-sm w-100 mt-3 fw-bold" onclick="segarkanDataMaster()">🔄 Segarkan Data</button>
+    </div>
+
+    <div id="panel-guru" class="dashboard-panel card shadow border-0 p-4">
+      <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <div class="overflow-hidden me-2">
+          <h5 class="fw-bold text-success mb-0 text-truncate">📋 Mode Kendali Absensi Guru</h5>
+          <small id="nama-guru-aktif" class="text-muted fw-bold d-block text-truncate"></small>
+        </div>
+        <button class="btn btn-sm btn-danger px-3 flex-shrink-0" onclick="keluarSistem()">Keluar</button>
+      </div>
+
+      <div class="row g-2 mb-3 bg-light p-3 rounded border">
+        <div class="col-6">
+          <label class="small fw-bold">Pilih Kelas:</label>
+          <select id="guru-set-kelas" class="form-select" onchange="aksiUbahFilterGuru()"></select>
+        </div>
+        <div class="col-6">
+          <label class="small fw-bold">Mata Pelajaran:</label>
+          <select id="guru-set-mapel" class="form-select" onchange="aksiUbahFilterGuru()">
+            <option value="Matematika">Matematika</option>
+            <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+            <option value="IPA">IPA</option>
+            <option value="IPS">IPS</option>
+          </select>
+        </div>
+      </div>
+
+      <ul class="nav nav-tabs mb-3" id="tabGuru">
+        <li class="nav-item"><button class="nav-link active fw-bold" onclick="pindahTabGuru('scanner')">📸 Scanner</button></li>
+        <li class="nav-item"><button class="nav-link fw-bold" onclick="pindahTabGuru('manual')">✍️ Absen Manual</button></li>
+        <li class="nav-item"><button class="nav-link fw-bold" onclick="pindahTabGuru('laporan')">📊 Rekap & Laporan</button></li>
+      </ul>
+
+      <div id="guru-tab-scanner" class="konten-guru-tab text-center">
+        <div id="reader" class="mx-auto border bg-dark text-white rounded mb-2" style="max-width:350px;"></div>
+        <p class="text-muted small px-2 mb-2">💡 <em>Kamera eror? Klik logo gembok 🔒 di kiri alamat URL browser Anda, ganti izin Kamera menjadi <b>Allow/Izinkan</b>.</em></p>
+        <button class="btn btn-sm btn-primary fw-bold px-4" onclick="mulaiKamera()">Nyalakan Scanner</button>
+      </div>
+
+      <div id="guru-tab-manual" class="konten-guru-tab d-none">
+        <table class="table table-striped table-sm text-center small bg-white border">
+          <thead class="table-dark"><tr><th>NIS</th><th>Nama Murid</th><th>Aksi Status</th></tr></thead>
+          <tbody id="tabel-guru-manual-body"></tbody>
+        </table>
+      </div>
+
+      <div id="guru-tab-laporan" class="konten-guru-tab d-none">
+        <div class="row g-2 mb-3 bg-white p-2 rounded border align-items-center">
+          <div class="col-md-5 col-12">
+            <label class="small fw-bold text-muted">Filter Bulan:</label>
+            <select id="guru-set-bulan" class="form-select form-select-sm" onchange="muatLaporanGuru()">
+              <option value="all">-- Semua Bulan --</option>
+              <option value="0">Januari</option>
+              <option value="1">Februari</option>
+              <option value="2">Maret</option>
+              <option value="3">April</option>
+              <option value="4">Mei</option>
+              <option value="5">Juni</option>
+              <option value="6">Juli</option>
+              <option value="7">Agustus</option>
+              <option value="8">September</option>
+              <option value="9">Oktober</option>
+              <option value="10">November</option>
+              <option value="11">Desember</option>
+            </select>
+          </div>
+          <div class="col-md-7 col-12 text-md-end text-start mt-2 mt-md-0">
+            <button class="btn btn-sm btn-success fw-bold me-1" onclick="cetakRekapBulanan()">🖨️ Cetak Rekap Bulan Ini</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="muatLaporanGuru()">🔄 Refresh</button>
+          </div>
+        </div>
+        
+        <table class="table table-bordered table-sm text-center small bg-white">
+          <thead class="table-secondary"><tr><th>Tanggal</th><th>Nama Siswa</th><th>Status</th></tr></thead>
+          <tbody id="tabel-guru-laporan-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalSiswa" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h6>+ Tambah Siswa</h6></div><div class="modal-body">
+    <input type="text" id="add-siswa-nis" class="form-control mb-2" placeholder="NIS Siswa">
+    <input type="text" id="add-siswa-nama" class="form-control mb-2" placeholder="Nama Lengkap">
+    <input type="text" id="add-siswa-kelas" class="form-control mb-2" placeholder="Kelas (Contoh: Kelas 7)">
+    <button class="btn btn-primary btn-sm w-100" onclick="simpanSiswaBaru()">Simpan Murid</button>
+  </div></div></div></div>
+
+  <div class="modal fade" id="modalGuru" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h6>+ Tambah Akun Guru</h6></div><div class="modal-body">
+    <input type="text" id="add-guru-nama" class="form-control mb-2" placeholder="Nama Guru">
+    <input type="password" id="add-guru-pin" class="form-control mb-2" placeholder="PIN Unik Login">
+    <button class="btn btn-warning btn-sm w-100 fw-bold" onclick="simpanGuruBaru()">Simpan Akun</button>
+  </div></div></div></div>
+
+  <script>
+    // MASUKKAN URL GOOGLE APP SCRIPT WEB APP ANDA DI SINI
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkkYcSZ8VYFLXvFDCvdCV9S8Cyp8hLDQH7R-2xkJic4Ri7NQjJIIwk13ckbH-PQmQy/exec";
+    
+    var cacheData = {};
+    var namaUserAktif = "";
+    var html5QrcodeScanner = null;
+
+    function prosesLogin() {
+      var pin = document.getElementById("input-pin").value;
+      if(!pin) return alert("Isi PIN!");
+      
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=login&pin=${pin}`)
+        .then(res => res.json())
+        .then(res => {
+          if(res.success) {
+            namaUserAktif = res.nama;
+            document.getElementById("panel-login").style.display = "none";
+            
+            if(res.role === "Admin") {
+              document.getElementById("panel-admin").style.display = "block";
+              document.getElementById("nama-admin-aktif").innerText = "Petugas: " + res.nama;
+              segarkanDataMaster();
+            } else {
+              document.getElementById("panel-guru").style.display = "block";
+              document.getElementById("nama-guru-aktif").innerText = "Guru: " + res.nama;
+              segarkanDataMaster();
+            }
+          } else { alert(res.message); }
+        });
+    }
+
+    function segarkanDataMaster() {
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=getdata`)
+        .then(res => res.json())
+        .then(data => {
+          cacheData = data;
+          buildFilterDropdowns();
+          if(document.getElementById("panel-admin").style.display === "block") { renderAdminStats(); }
+          aksiUbahFilterGuru();
+        });
+    }
+
+    function buildFilterDropdowns() {
+      var kelases = [...new Set((cacheData.riwayatSiswa || []).map(s => s.kelas))];
+      var opt = "";
+      kelases.forEach(k => { opt += `<option value="${k}">${k}</option>`; });
+      
+      document.getElementById("admin-qr-kelas").innerHTML = opt;
+      document.getElementById("guru-set-kelas").innerHTML = opt;
+    }
+
+    function getBadgeClass(status) {
+      // PENINGKATAN 3: Logika Warna Badge Dinamis Berdasarkan Status
+      var st = (status || "").toLowerCase();
+      if(st === "hadir") return "badge-hadir";
+      if(st === "izin") return "badge-izin";
+      if(st === "sakit") return "badge-sakit";
+      if(st === "alfa") return "badge-alfa";
+      return "bg-secondary text-white";
+    }
+
+    function renderAdminStats() {
+      document.getElementById("stat-total-siswa").innerText = (cacheData.riwayatSiswa || []).length;
+      
+      var hariIni = new Date().toDateString();
+      var logHariIni = (cacheData.riwayat || []).filter(l => new Date(l.Timestamp).toDateString() === hariIni);
+      document.getElementById("stat-hadir-hari-ini").innerText = logHariIni.filter(l => l.Status.toLowerCase() === "hadir").length;
+      
+      var tbody = document.getElementById("log-aktivitas-admin");
+      tbody.innerHTML = "";
+      var limaTerakhir = (cacheData.riwayat || []).slice(-5).reverse();
+      limaTerakhir.forEach(l => {
+        tbody.innerHTML += `<tr><td>${l.Nama}</td><td>${l.Kelas}</td><td>${l.Mapel}</td><td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td></tr>`;
+      });
+      muatDaftarQRAdmin();
+    }
+
+    function muatDaftarQRAdmin() {
+      var kls = document.getElementById("admin-qr-kelas").value;
+      var limit = parseInt(document.getElementById("admin-qr-limit").value);
+      var box = document.getElementById("box-cetak-qr");
+      box.innerHTML = "";
+      
+      var filtered = (cacheData.riwayatSiswa || []).filter(s => s.kelas === kls).slice(0, limit);
+      filtered.forEach(s => {
+        var qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${s.nis}`;
+        box.innerHTML += `<div class="col p-1 border"><img src="${qrSrc}" class="d-block mx-auto mb-1"><strong>${s.nama}</strong><br><span class="text-muted text-xs">${s.nis}</span><br><button class="btn btn-xs btn-success p-0 px-1 mt-1" style="font-size:10px" onclick="window.open('${qrSrc}')">Unduh</button></div>`;
+      });
+    }
+
+    function aksiUbahFilterGuru() {
+      muatSiswaAbsenManual();
+      muatLaporanGuru();
+    }
+
+    function pindahTabGuru(target) {
+      document.querySelectorAll(".konten-guru-tab").forEach(e => e.classList.add("d-none"));
+      document.getElementById("guru-tab-"+target).classList.remove("d-none");
+    }
+
+    function muatSiswaAbsenManual() {
+      var tbody = document.getElementById("tabel-guru-manual-body");
+      var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+      tbody.innerHTML = "";
+      
+      var filtered = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
+      filtered.forEach(s => {
+        tbody.innerHTML += `<tr>
+          <td>${s.nis}</td><td class="text-start">${s.nama}</td>
+          <td>
+            <button class="btn btn-sm btn-success py-0 px-2 fw-bold" onclick="eksekusiAbsen('${s.nis}','Hadir')">H</button>
+            <button class="btn btn-sm btn-warning py-0 px-2 fw-bold text-dark" onclick="eksekusiAbsen('${s.nis}','Izin')">I</button>
+            <button class="btn btn-sm btn-info py-0 px-2 fw-bold text-dark" onclick="eksekusiAbsen('${s.nis}','Sakit')">S</button>
+            <button class="btn btn-sm btn-danger py-0 px-2 fw-bold" onclick="eksekusiAbsen('${s.nis}','Alfa')">A</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    function eksekusiAbsen(nis, status) {
+      var kls = document.getElementById("guru-set-kelas").value;
+      var mpl = document.getElementById("guru-set-mapel").value;
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&guru=${namaUserAktif}&status=${status}`)
+        .then(res => res.json())
+        .then(res => { alert(res.message); segarkanDataMaster(); });
+    }
+
+    function muatLaporanGuru() {
+      var tbody = document.getElementById("tabel-guru-laporan-body");
+      var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+      var mpl = (document.getElementById("guru-set-mapel").value || "").toLowerCase();
+      var bln = document.getElementById("guru-set-bulan").value;
+      tbody.innerHTML = "";
+      
+      var filtered = (cacheData.riwayat || []).filter(l => {
+        var cocokKelas = (l.Kelas || "").toLowerCase() === kls;
+        var cocokMapel = (l.Mapel || "").toLowerCase() === mpl;
+        
+        var cocokBulan = true;
+        if (bln !== "all" && l.Timestamp) {
+          var tglObj = new Date(l.Timestamp);
+          cocokBulan = tglObj.getMonth().toString() === bln;
+        }
+        
+        return cocokKelas && cocokMapel && cocokBulan;
+      }).reverse();
+      
+      if(filtered.length === 0) { 
+        tbody.innerHTML = "<tr><td colspan='3' class='text-muted p-3'>Belum ada rekaman log absen untuk filter ini.</td></tr>"; 
+        return; 
+      }
+      
+      filtered.forEach(l => {
+        // PENINGKATAN 4: Format Tanggal Manusiawi Lokal Indonesia (id-ID)
+        var tglIndo = "-";
+        if (l.Timestamp) {
+          tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        
+        tbody.innerHTML += `<tr>
+          <td>${tglIndo}</td>
+          <td class="text-start">${l.Nama}</td>
+          <td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td>
+        </tr>`;
+      });
+    }
+
+    function mulaiKamera() {
+      if(!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render((text) => {
+          html5QrcodeScanner.clear();
+          html5QrcodeScanner = null;
+          eksekusiAbsen(text, "Hadir");
+        });
+      }
+    }
+
+    function cetakRekapBulanan() {
+      var kls = document.getElementById("guru-set-kelas").value;
+      var mpl = document.getElementById("guru-set-mapel").value;
+      var selectBulan = document.getElementById("guru-set-bulan");
+      var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
+      
+      var html = `<html><head><title>Rekap Absen - ${kls}</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="p-4">
+        <h3 class="text-center fw-bold">REKAPITULASI DATA KEHADIRAN SISWA</h3>
+        <p class="text-center fw-semibold text-secondary">Kelas: ${kls} | Mata Pelajaran: ${mpl} | Periode: ${namaBulan}</p>
+        <table class="table table-bordered text-center align-middle">
+          <thead class="table-dark"><tr><th>Tanggal</th><th>Nama Murid</th><th>Status Absen</th></tr></thead>
+          <tbody>`;
+      
+      var bln = selectBulan.value;
+      var filtered = (cacheData.riwayat || []).filter(l => {
+        var cocokKelas = l.Kelas === kls;
+        var cocokMapel = l.Mapel === mpl;
+        var cocokBulan = true;
+        if (bln !== "all" && l.Timestamp) {
+          var tglObj = new Date(l.Timestamp);
+          cocokBulan = tglObj.getMonth().toString() === bln;
+        }
+        return cocokKelas && cocokMapel && cocokBulan;
+      });
+      
+      if(filtered.length === 0) {
+        html += `<tr><td colspan="3" class="text-muted p-3">Tidak ada data kehadiran pada periode ini.</td></tr>`;
+      } else {
+        filtered.forEach(l => { 
+          var tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+          html += `<tr><td>${tglIndo}</td><td class="text-start">${l.Nama}</td><td class="fw-bold">${l.Status}</td></tr>`; 
+        });
+      }
+      
+      html += `</tbody></table><script>window.print();<\/script></body></html>`;
+      var win = window.open("", "_blank");
+      win.document.write(html);
+      win.document.close();
+    }
+
+    function simpanSiswaBaru() {
+      var n = document.getElementById("add-siswa-nis").value;
+      var nm = document.getElementById("add-siswa-nama").value;
+      var k = document.getElementById("add-siswa-kelas").value;
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_siswa&nis=${n}&nama=${nm}&kelas=${k}`).then(r=>r.json()).then(r=>{alert(r.message); location.reload();});
+    }
+
+    function simpanGuruBaru() {
+      var nm = document.getElementById("add-guru-nama").value;
+      var p = document.getElementById("add-guru-pin").value;
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_guru&nama=${nm}&pin=${p}`).then(r=>r.json()).then(r=>{alert(r.message); location.reload();});
+    }
+
+    function keluarSistem() { location.reload(); }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

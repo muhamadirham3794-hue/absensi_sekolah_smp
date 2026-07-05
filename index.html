@@ -12,6 +12,8 @@
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
     body { background-color: #f4f6f9; font-family: system-ui, -apple-system, sans-serif; }
     .card-login { max-width: 400px; margin: 80px auto; border-radius: 15px; }
@@ -22,6 +24,7 @@
     .badge-alfa { background-color: #dc3545; color: white; }
     .btn-status-absen { font-size: 13px; font-weight: bold; width: 32px; height: 32px; padding: 0; text-align: center; }
     .btn-reset-absen { font-size: 13px; width: 32px; height: 32px; padding: 0; text-align: center; }
+    .chart-container { position: relative; height: 220px; width: 100%; }
   </style>
 </head>
 <body>
@@ -53,7 +56,7 @@
         <button class="btn btn-sm btn-outline-danger px-3 rounded-pill" onclick="keluarSistem()">Keluar</button>
       </div>
 
-      <div class="row text-center mb-4 g-2">
+      <div class="row text-center mb-3 g-2">
         <div class="col-6">
           <div class="bg-light p-3 rounded-3 border shadow-sm">
             <small class="text-muted d-block fw-semibold">Total Siswa Terdata</small>
@@ -65,6 +68,13 @@
             <small class="text-muted d-block fw-semibold">Hadir Hari Ini</small>
             <h2 id="stat-hadir-hari-ini" class="fw-bold text-success mb-0">0</h2>
           </div>
+        </div>
+      </div>
+
+      <div class="card border p-3 rounded-3 mb-4 bg-white shadow-sm">
+        <h6 class="fw-bold mb-2 text-secondary">📊 Grafik Persentase Kehadiran Hari Ini</h6>
+        <div class="chart-container d-flex justify-content-center align-items-center">
+          <canvas id="chartKehadiranAdmin"></canvas>
         </div>
       </div>
 
@@ -232,8 +242,8 @@
     var namaUserAktif = "";
     var html5QrcodeScanner = null;
     var penampungPWAEvent;
+    var instanceChartAdmin = null; // Penampung objek grafik agar bisa di-destroy & re-render
 
-    // Ambil data identitas awal saat web pertama kali dibuka
     window.addEventListener('DOMContentLoaded', () => {
       fetch(`${GOOGLE_SCRIPT_URL}?aksi=getdata`)
         .then(res => res.json())
@@ -241,7 +251,6 @@
           cacheData = data;
           if (data.pengaturan) {
             document.getElementById("sub-login-sekolah").innerText = data.pengaturan.namaSekolah + " (TA " + data.pengaturan.tahunAjaran + ")";
-            // Masukkan data awal ke input form pengaturan
             document.getElementById("set-nama-sekolah").value = data.pengaturan.namaSekolah;
             document.getElementById("set-tahun-ajaran").value = data.pengaturan.tahunAjaran;
             document.getElementById("set-kepsek").value = data.pengaturan.kepsek;
@@ -326,11 +335,30 @@
     }
 
     function renderAdminStats() {
-      document.getElementById("stat-total-siswa").innerText = (cacheData.riwayatSiswa || []).length;
+      // Total siswa terdata
+      var totalSiswa = (cacheData.riwayatSiswa || []).length;
+      document.getElementById("stat-total-siswa").innerText = totalSiswa;
+      
+      // Ambil log absensi hari ini saja
       var hariIni = new Date().toDateString();
       var logHariIni = (cacheData.riwayat || []).filter(l => new Date(l.Timestamp).toDateString() === hariIni);
-      document.getElementById("stat-hadir-hari-ini").innerText = logHariIni.filter(l => l.Status.toLowerCase() === "hadir").length;
       
+      // Hitung pecahan status untuk statistik angka & grafik warna
+      var jmlHadir = logHariIni.filter(l => l.Status.toLowerCase() === "hadir").length;
+      var jmlIzin  = logHariIni.filter(l => l.Status.toLowerCase() === "izin").length;
+      var jmlSakit = logHariIni.filter(l => l.Status.toLowerCase() === "sakit").length;
+      var jmlAlfa  = logHariIni.filter(l => l.Status.toLowerCase() === "alfa").length;
+      
+      // Hitung yang belum absen sama sekali hari ini
+      var jmlBelumAbsen = totalSiswa - logHariIni.length;
+      if(jmlBelumAbsen < 0) jmlBelumAbsen = 0; // Proteksi hitungan multi-mapel
+      
+      document.getElementById("stat-hadir-hari-ini").innerText = jmlHadir;
+      
+      // RENDERING GRAFIK LINGKARAN (DONUT CHART.JS)
+      renderGrafikDonut(jmlHadir, jmlIzin, jmlSakit, jmlAlfa, jmlBelumAbsen);
+      
+      // 5 log aktivitas terakhir
       var tbody = document.getElementById("log-aktivitas-admin");
       tbody.innerHTML = "";
       var limaTerakhir = (cacheData.riwayat || []).slice(-5).reverse();
@@ -339,6 +367,46 @@
         tbody.innerHTML += `<tr><td>${l.Nama}</td><td>${l.Kelas}</td><td>${l.Mapel}</td><td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td></tr>`;
       });
       muatDaftarQRAdmin();
+    }
+
+    // FUNGSI UTAMA OPSI 3: Pembuat grafik lingkaran interaktif
+    function renderGrafikDonut(hadir, izin, sakit, alfa, belum) {
+      var ctx = document.getElementById('chartKehadiranAdmin').getContext('2d');
+      
+      // Bersihkan sisa renderan grafik lama agar tidak tumpang tindih saat kursor diarahkan (hover)
+      if (instanceChartAdmin) {
+        instanceChartAdmin.destroy();
+      }
+      
+      instanceChartAdmin = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Hadir 🟢', 'Izin 🟡', 'Sakit 🔵', 'Alfa 🔴', 'Belum Absen ⚪'],
+          datasets: [{
+            data: [hadir, izin, sakit, alfa, belum],
+            backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#dc3545', '#e9ecef'],
+            borderWidth: 2,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' ' + context.label.split(' ')[0] + ': ' + context.raw + ' Siswa';
+                }
+              }
+            }
+          }
+        }
+      });
     }
 
     function muatDaftarQRAdmin() {
@@ -436,13 +504,11 @@
       segarkanDataMaster();
     }
 
-    // UPDATE SETTING SEKOLAH KE GOOGLE SHEET
     function simpanPengaturanSekolah() {
       var n = document.getElementById("set-nama-sekolah").value.trim();
       var ta = document.getElementById("set-tahun-ajaran").value.trim();
       var kp = document.getElementById("set-kepsek").value.trim();
       var np = document.getElementById("set-nip-kepsek").value.trim();
-      
       if(!n) return alert("Sistem: Nama sekolah tidak boleh kosong!");
       
       fetch(`${GOOGLE_SCRIPT_URL}?aksi=update_setting&nama_sekolah=${encodeURIComponent(n)}&tahun_ajaran=${encodeURIComponent(ta)}&kepsek=${encodeURIComponent(kp)}&nip_kepsek=${encodeURIComponent(np)}`)
@@ -481,7 +547,6 @@
       }
     }
 
-    // CETAK REKAP SEKARANG MEMILIKI KOP RESMI SEKOLAH & TANDA TANGAN KEPALA SEKOLAH (DINAMIS)
     function cetakRekapBulanan() {
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
@@ -492,7 +557,6 @@
       var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
       var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
       var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
-      var tglHariIni = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
       var html = `<html><head><title>Rekap Absensi - ${kls}</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="p-5">
         <div class="text-center border-bottom border-3 pb-2 mb-4">

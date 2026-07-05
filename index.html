@@ -137,6 +137,11 @@
       </div>
 
       <div id="guru-tab-manual" class="konten-guru-tab d-none">
+        <div class="mb-2 text-end">
+          <button id="btn-set-semua-hadir" class="btn btn-sm btn-success fw-bold shadow-sm px-3 rounded-3" onclick="eksekusiSetSemuaHadir()">
+            🟢 Set Semua Siswa Hadir
+          </button>
+        </div>
         <div class="table-responsive shadow-sm rounded border">
           <table class="table table-striped table-sm text-center align-middle small mb-0 bg-white">
             <thead class="table-dark"><tr><th>NIS</th><th>Nama Murid</th><th>Status</th></tr></thead>
@@ -181,7 +186,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="modalSiswa" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">➕ Tambah Master Siswa Baru</h6><button type="button" class="btn-close btn-close-white" data-bs-disconnect="modal" data-bs-dismiss="modal"></button></div><div class="modal-body">
+  <div class="modal fade" id="modalSiswa" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">➕ Tambah Master Siswa Baru</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
     <label class="small fw-bold text-muted mb-1">Nomor Induk Siswa (NIS):</label>
     <input type="text" id="add-siswa-nis" class="form-control mb-2" placeholder="Contoh: 2026001">
     <label class="small fw-bold text-muted mb-1">Nama Lengkap Murid:</label>
@@ -208,7 +213,6 @@
     var html5QrcodeScanner = null;
     var penampungPWAEvent;
 
-    // Logika Auto-PWA Prompt Installer Screen
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       penampungPWAEvent = e;
@@ -322,7 +326,6 @@
       document.querySelectorAll(".konten-guru-tab").forEach(e => e.classList.add("d-none"));
       document.getElementById("guru-tab-"+target).classList.remove("d-none");
       
-      // Mengubah warna tombol pill indikator navigasi aktif aktif
       document.querySelectorAll("#tabGuru button").forEach(b => { b.classList.remove("active", "btn-primary"); b.classList.add("text-secondary"); });
       var btnAktif = document.getElementById("btn-nav-"+target);
       btnAktif.classList.remove("text-secondary");
@@ -350,15 +353,39 @@
       });
     }
 
-    function eksekusiAbsen(nis, status) {
+    function eksekusiAbsen(nis, status, silent = false) {
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
-      fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&guru=${namaUserAktif}&status=${status}`)
+      return fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&guru=${namaUserAktif}&status=${status}`)
         .then(res => res.json())
         .then(res => { 
-          alert(res.message); 
-          segarkanDataMaster(); 
+          if(!silent) { alert(res.message); segarkanDataMaster(); }
+          return res;
         });
+    }
+
+    // LOGIKA PENINGKATAN OPSI 1: Melakukan perulangan otomatis (Batching Process) set hadir semua
+    async function eksekusiSetSemuaHadir() {
+      var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+      var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
+      
+      if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini untuk diabsen.");
+      
+      if (!confirm(`Apakah Anda yakin ingin memberi status HADIR untuk seluruh ${filteredSiswa.length} siswa di kelas ini?`)) return;
+      
+      var tombol = document.getElementById("btn-set-semua-hadir");
+      tombol.disabled = true;
+      tombol.innerText = "⏳ Memproses Absen Massal...";
+      
+      // Menggunakan runtunan async await agar data masuk satu per satu secara aman ke Google Sheets
+      for (let i = 0; i < filteredSiswa.length; i++) {
+        await eksekusiAbsen(filteredSiswa[i].nis, "Hadir", true);
+      }
+      
+      alert(`Sistem: Sukses mencatat status HADIR untuk semua siswa di kelas!`);
+      tombol.disabled = false;
+      tombol.innerText = "🟢 Set Semua Siswa Hadir";
+      segarkanDataMaster();
     }
 
     function muatLaporanGuru() {

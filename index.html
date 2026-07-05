@@ -35,7 +35,7 @@
     <div id="panel-login" class="card card-login shadow border-0">
       <div class="card-body text-center p-4">
         <h3 class="fw-bold text-primary mb-1">🏫 ABSENSI DIGITAL</h3>
-        <p class="text-muted small mb-4">Sistem Pemindai QR & Kendali Manual</p>
+        <p id="sub-login-sekolah" class="text-muted small mb-4">Memuat data identitas sekolah...</p>
         <div class="mb-3">
           <label class="small fw-bold text-muted d-block text-start mb-1">Masukkan PIN Petugas / Guru:</label>
           <input type="password" id="input-pin" class="form-control text-center fw-bold fs-3" placeholder="••••" maxlength="8">
@@ -77,8 +77,9 @@
       </div>
 
       <div class="row g-2 mb-4">
-        <div class="col-6"><button class="btn btn-dark w-100 fw-semibold rounded-3 py-2" data-bs-toggle="modal" data-bs-target="#modalSiswa">+ Murid Baru</button></div>
-        <div class="col-6"><button class="btn btn-warning w-100 fw-bold rounded-3 py-2 text-dark" data-bs-toggle="modal" data-bs-target="#modalGuru">+ Guru Baru</button></div>
+        <div class="col-4"><button class="btn btn-dark w-100 fw-semibold rounded-3 py-2 small" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#modalSiswa">+ Murid Baru</button></div>
+        <div class="col-4"><button class="btn btn-warning w-100 fw-bold rounded-3 py-2 text-dark small" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#modalGuru">+ Guru Baru</button></div>
+        <div class="col-4"><button class="btn btn-primary w-100 fw-semibold rounded-3 py-2 small" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#modalSetting">⚙️ Set Sekolah</button></div>
       </div>
 
       <div class="border p-3 rounded-3 bg-light shadow-sm">
@@ -133,7 +134,7 @@
 
       <div id="guru-tab-scanner" class="konten-guru-tab text-center py-2">
         <div id="reader" class="mx-auto border bg-dark text-white rounded-3 mb-3 shadow-sm" style="max-width:340px; overflow:hidden;"></div>
-        <p class="text-muted small px-3 mb-3" style="font-size:12px;">💡 <em>Kamera tidak tampil? Ketuk ikon gembok 🔒 di ujung bar browser Anda, ubah izin Kamera ke <b>Allow / Izinkan</b>.</em></p>
+        <p class="text-muted small px-3 mb-3" style="font-size:12px;">💡 <em>Kamera tidak tampil? Ubah izin browser ke Allow Kamera.</em></p>
         <button class="btn btn-primary fw-bold px-5 py-2 shadow rounded-pill" onclick="mulaiKamera()">Nyalakan Kamera Scanner</button>
       </div>
 
@@ -193,6 +194,18 @@
     </div>
   </div>
 
+  <div class="modal fade" id="modalSetting" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-primary text-white"><h6 class="modal-title fw-bold">⚙️ Pengaturan Identitas Sekolah</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
+    <label class="small fw-bold text-muted mb-1">Nama Lembaga / Sekolah:</label>
+    <input type="text" id="set-nama-sekolah" class="form-control mb-2">
+    <label class="small fw-bold text-muted mb-1">Tahun Ajaran Aktif:</label>
+    <input type="text" id="set-tahun-ajaran" class="form-control mb-2" placeholder="Contoh: 2026/2027">
+    <label class="small fw-bold text-muted mb-1">Nama Kepala Sekolah:</label>
+    <input type="text" id="set-kepsek" class="form-control mb-2">
+    <label class="small fw-bold text-muted mb-1">NIP Kepala Sekolah:</label>
+    <input type="text" id="set-nip-kepsek" class="form-control mb-3">
+    <button class="btn btn-success w-100 fw-bold py-2" onclick="simpanPengaturanSekolah()">Simpan Konfigurasi</button>
+  </div></div></div></div>
+
   <div class="modal fade" id="modalSiswa" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">➕ Tambah Master Siswa Baru</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
     <label class="small fw-bold text-muted mb-1">Nomor Induk Siswa (NIS):</label>
     <input type="text" id="add-siswa-nis" class="form-control mb-2" placeholder="Contoh: 2026001">
@@ -207,33 +220,45 @@
     <label class="small fw-bold text-dark mb-1">Nama Lengkap Guru:</label>
     <input type="text" id="add-guru-nama" class="form-control mb-2" placeholder="Nama Beserta Gelar">
     <label class="small fw-bold text-dark mb-1">PIN Unik Login Masuk:</label>
-    <input type="password" id="add-guru-pin" class="form-control mb-3" placeholder="4 sampai 6 digit angka">
+    <input type="password" id="add-guru-pin" class="form-control mb-3" placeholder="4-6 digit angka">
     <button class="btn btn-dark w-100 fw-bold py-2 text-warning" onclick="simpanGuruBaru()">Daftarkan Akun Guru</button>
   </div></div></div></div>
 
   <script>
     // MASUKKAN URL GOOGLE APP SCRIPT WEB APP HASIL DEPLOY TERBARU KAMU DI SINI
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgUQ2VZlvef9D6OGYk65NM6ugxFvkUX4Bax91s-LRQAKf9TGxWCliRdK1ats9B0tiE/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4rhRbzAZFw4kR70f-tFVdbH-VIpTBKCz7SAzLqy-1L_GWt3Woe5B6R5Vc1O8RGhIy/exec";
     
     var cacheData = {};
     var namaUserAktif = "";
     var html5QrcodeScanner = null;
     var penampungPWAEvent;
 
+    // Ambil data identitas awal saat web pertama kali dibuka
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=getdata`)
+        .then(res => res.json())
+        .then(data => {
+          cacheData = data;
+          if (data.pengaturan) {
+            document.getElementById("sub-login-sekolah").innerText = data.pengaturan.namaSekolah + " (TA " + data.pengaturan.tahunAjaran + ")";
+            // Masukkan data awal ke input form pengaturan
+            document.getElementById("set-nama-sekolah").value = data.pengaturan.namaSekolah;
+            document.getElementById("set-tahun-ajaran").value = data.pengaturan.tahunAjaran;
+            document.getElementById("set-kepsek").value = data.pengaturan.kepsek;
+            document.getElementById("set-nip-kepsek").value = data.pengaturan.nipKepsek;
+          }
+        }).catch(e => { document.getElementById("sub-login-sekolah").innerText = "Sistem Kontrol Presensi QR Aktif"; });
+    });
+
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      penampungPWAEvent = e;
+      e.preventDefault(); penampungPWAEvent = e;
       document.getElementById('box-pwa-install').classList.remove('d-none');
     });
 
     function pemicuInstalPWA() {
       if (penampungPWAEvent) {
         penampungPWAEvent.prompt();
-        penampungPWAEvent.userChoice.then((pilihan) => {
-          if (pilihan.outcome === 'accepted') {
-            document.getElementById('box-pwa-install').classList.add('d-none');
-          }
-        });
+        penampungPWAEvent.userChoice.then((pilihan) => { if (pilihan.outcome === 'accepted') document.getElementById('box-pwa-install').classList.add('d-none'); });
       }
     }
 
@@ -276,22 +301,17 @@
       var kelases = [...new Set((cacheData.riwayatSiswa || []).map(s => s.kelas))];
       var opt = "";
       kelases.forEach(k => { if(k) opt += `<option value="${k}">${k}</option>`; });
-      
       document.getElementById("admin-qr-kelas").innerHTML = opt || "<option>-</option>";
       document.getElementById("guru-set-kelas").innerHTML = opt || "<option>-</option>";
     }
 
-    // Mengambil info status siswa hari ini di mapel tertentu untuk indikator tabel manual
     function dapatkanStatusHariIni(nis) {
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
       var hariIniStr = new Date().toDateString();
       
       var cocok = (cacheData.riwayat || []).find(l => {
-        return l.Nis.toString() === nis.toString() &&
-               l.Kelas === kls &&
-               l.Mapel === mpl &&
-               new Date(l.Timestamp).toDateString() === hariIniStr;
+        return l.Nis.toString() === nis.toString() && l.Kelas === kls && l.Mapel === mpl && new Date(l.Timestamp).toDateString() === hariIniStr;
       });
       return cocok ? cocok.status || cocok.Status : "";
     }
@@ -307,7 +327,6 @@
 
     function renderAdminStats() {
       document.getElementById("stat-total-siswa").innerText = (cacheData.riwayatSiswa || []).length;
-      
       var hariIni = new Date().toDateString();
       var logHariIni = (cacheData.riwayat || []).filter(l => new Date(l.Timestamp).toDateString() === hariIni);
       document.getElementById("stat-hadir-hari-ini").innerText = logHariIni.filter(l => l.Status.toLowerCase() === "hadir").length;
@@ -315,9 +334,7 @@
       var tbody = document.getElementById("log-aktivitas-admin");
       tbody.innerHTML = "";
       var limaTerakhir = (cacheData.riwayat || []).slice(-5).reverse();
-      
       if(limaTerakhir.length === 0) { tbody.innerHTML = "<tr><td colspan='4' class='text-muted py-2'>Belum ada aktivitas hari ini.</td></tr>"; }
-      
       limaTerakhir.forEach(l => {
         tbody.innerHTML += `<tr><td>${l.Nama}</td><td>${l.Kelas}</td><td>${l.Mapel}</td><td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td></tr>`;
       });
@@ -348,11 +365,9 @@
     function pindahTabGuru(target) {
       document.querySelectorAll(".konten-guru-tab").forEach(e => e.classList.add("d-none"));
       document.getElementById("guru-tab-"+target).classList.remove("d-none");
-      
       document.querySelectorAll("#tabGuru button").forEach(b => { b.classList.remove("active", "btn-primary"); b.classList.add("text-secondary"); });
       var btnAktif = document.getElementById("btn-nav-"+target);
-      btnAktif.classList.remove("text-secondary");
-      btnAktif.classList.add("active");
+      btnAktif.classList.remove("text-secondary"); btnAktif.classList.add("active");
     }
 
     function muatSiswaAbsenManual() {
@@ -386,10 +401,9 @@
     function fiturCariSiswaManual() {
       var input = document.getElementById("input-cari-siswa").value.toLowerCase();
       var rows = document.getElementsByClassName("baris-siswa-manual");
-      
       for (var i = 0; i < rows.length; i++) {
         var namaSiswa = rows[i].getElementsByClassName("nama-siswa-kolom")[0].innerText.toLowerCase();
-        if (namaSiswa.includes(input)) { rows[i].style.display = ""; } else { rows[i].style.display = "none"; }
+        if (namaSiswa.includes(input)) rows[i].style.display = ""; else rows[i].style.display = "none";
       }
     }
 
@@ -397,47 +411,42 @@
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
       return fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&guru=${namaUserAktif}&status=${status}`)
-        .then(res => res.json())
-        .then(res => { 
-          if(!silent) { alert(res.message); segarkanDataMaster(); }
-          return res;
-        });
+        .then(res => res.json()).then(res => { if(!silent) { alert(res.message); segarkanDataMaster(); } return res; });
     }
 
-    // LOGIKA PRO OPSI 3: Reset / Pembatalan Data Absen Murid Tertentu
     function eksekusiResetAbsen(nis, nama) {
-      if(!confirm(`Apakah Anda yakin ingin membatalkan/menghapus rekaman absensi hari ini untuk siswa: ${nama}?`)) return;
-      
+      if(!confirm(`Batalkan rekaman absensi hari ini untuk: ${nama}?`)) return;
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
-      
       fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&status=Reset`)
-        .then(res => res.json())
-        .then(res => {
-          alert(res.message);
-          segarkanDataMaster();
-        }).catch(err => alert("Gagal memproses pembatalan ke backend."));
+        .then(res => res.json()).then(res => { alert(res.message); segarkanDataMaster(); });
     }
 
     async function eksekusiSetSemuaHadir() {
       var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
       var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
-      
       if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
-      if (!confirm(`Apakah Anda yakin memberi status HADIR untuk seluruh ${filteredSiswa.length} siswa di kelas ini?`)) return;
+      if (!confirm(`Set HADIR seluruh ${filteredSiswa.length} siswa?`)) return;
       
       var tombol = document.getElementById("btn-set-semua-hadir");
-      tombol.disabled = true;
-      tombol.innerText = "⏳ Proses...";
-      
-      for (let i = 0; i < filteredSiswa.length; i++) {
-        await eksekusiAbsen(filteredSiswa[i].nis, "Hadir", true);
-      }
-      
-      alert(`Sistem: Sukses mencatat status HADIR untuk semua siswa di kelas!`);
-      tombol.disabled = false;
-      tombol.innerText = "🟢 Set Semua Hadir";
+      tombol.disabled = true; tombol.innerText = "⏳...";
+      for (let i = 0; i < filteredSiswa.length; i++) { await eksekusiAbsen(filteredSiswa[i].nis, "Hadir", true); }
+      alert(`Sistem: Sukses mencatat status HADIR massal!`);
+      tombol.disabled = false; tombol.innerText = "🟢 Set Semua Hadir";
       segarkanDataMaster();
+    }
+
+    // UPDATE SETTING SEKOLAH KE GOOGLE SHEET
+    function simpanPengaturanSekolah() {
+      var n = document.getElementById("set-nama-sekolah").value.trim();
+      var ta = document.getElementById("set-tahun-ajaran").value.trim();
+      var kp = document.getElementById("set-kepsek").value.trim();
+      var np = document.getElementById("set-nip-kepsek").value.trim();
+      
+      if(!n) return alert("Sistem: Nama sekolah tidak boleh kosong!");
+      
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=update_setting&nama_sekolah=${encodeURIComponent(n)}&tahun_ajaran=${encodeURIComponent(ta)}&kepsek=${encodeURIComponent(kp)}&nip_kepsek=${encodeURIComponent(np)}`)
+        .then(r=>r.json()).then(r=>{ alert(r.message); location.reload(); });
     }
 
     function muatLaporanGuru() {
@@ -458,73 +467,70 @@
         return cocokKelas && cocokMapel && cocokBulan;
       }).reverse();
       
-      if(filtered.length === 0) { 
-        tbody.innerHTML = "<tr><td colspan='3' class='text-muted p-3'>Belum ada rekaman log absen pada filter ini.</td></tr>"; 
-        return; 
-      }
-      
+      if(filtered.length === 0) { tbody.innerHTML = "<tr><td colspan='3' class='text-muted p-3'>Belum ada rekaman log.</td></tr>"; return; }
       filtered.forEach(l => {
-        var tglIndo = "-";
-        if (l.Timestamp) {
-          tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-        }
-        tbody.innerHTML += `<tr>
-          <td><small class="fw-bold">${tglIndo}</small></td>
-          <td class="text-start">${l.Nama}</td>
-          <td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td>
-        </tr>`;
+        var tglIndo = l.Timestamp ? new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : "-";
+        tbody.innerHTML += `<tr><td><small class="fw-bold">${tglIndo}</small></td><td class="text-start">${l.Nama}</td><td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td></tr>`;
       });
     }
 
     function mulaiKamera() {
       if(!html5QrcodeScanner) {
         html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 12, qrbox: 240 });
-        html5QrcodeScanner.render((text) => {
-          html5QrcodeScanner.clear();
-          html5QrcodeScanner = null;
-          eksekusiAbsen(text, "Hadir");
-        });
+        html5QrcodeScanner.render((text) => { html5QrcodeScanner.clear(); html5QrcodeScanner = null; eksekusiAbsen(text, "Hadir"); });
       }
     }
 
+    // CETAK REKAP SEKARANG MEMILIKI KOP RESMI SEKOLAH & TANDA TANGAN KEPALA SEKOLAH (DINAMIS)
     function cetakRekapBulanan() {
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
       var selectBulan = document.getElementById("guru-set-bulan");
       var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
       
-      var html = `<html><head><title>Print Rekap Absensi - ${kls}</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="p-4">
-        <h3 class="text-center fw-bold text-dark">REKAPITULASI LAPORAN DATA KEHADIRAN SISWA</h3>
-        <p class="text-center fw-semibold text-secondary mb-4">Kelas: ${kls} | Mata Pelajaran: ${mpl} | Periode Rekap: ${namaBulan}</p>
-        <table class="table table-bordered table-striped text-center align-middle">
+      var namaSch = cacheData.pengaturan ? cacheData.pengaturan.namaSekolah : "Sekolah";
+      var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
+      var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
+      var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
+      var tglHariIni = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      var html = `<html><head><title>Rekap Absensi - ${kls}</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="p-5">
+        <div class="text-center border-bottom border-3 pb-2 mb-4">
+          <h2 class="fw-bold text-uppercase mb-0">${namaSch}</h2>
+          <p class="mb-1 fw-semibold text-secondary">Sistem Informasi Absensi Digital Berbasis QR Code & Cloud Database</p>
+          <small class="text-muted">Tahun Ajaran: ${taSch} | Periode Cetak: ${namaBulan}</small>
+        </div>
+        <h4 class="text-center fw-bold text-dark mb-1">REKAPITULASI DATA KEHADIRAN SISWA</h4>
+        <p class="text-center mb-4">Kelas: <b>${kls}</b> | Mata Pelajaran: <b>${mpl}</b></p>
+        <table class="table table-bordered text-center align-middle m-auto" style="max-width:800px;">
           <thead class="table-dark"><tr><th>Tanggal Absen</th><th>Nama Lengkap Murid</th><th>Status Kehadiran</th></tr></thead>
           <tbody>`;
       
       var bln = selectBulan.value;
       var filtered = (cacheData.riwayat || []).filter(l => {
-        var cocokKelas = l.Kelas === kls;
-        var cocokMapel = l.Mapel === mpl;
-        var cocokBulan = true;
-        if (bln !== "all" && l.Timestamp) {
-          var tglObj = new Date(l.Timestamp);
-          cocokBulan = tglObj.getMonth().toString() === bln;
-        }
+        var cocokKelas = l.Kelas === kls; var cocokMapel = l.Mapel === mpl; var cocokBulan = true;
+        if (bln !== "all" && l.Timestamp) { var tglObj = new Date(l.Timestamp); cocokBulan = tglObj.getMonth().toString() === bln; }
         return cocokKelas && cocokMapel && cocokBulan;
       });
       
-      if(filtered.length === 0) {
-        html += `<tr><td colspan="3" class="text-muted p-3">Tidak ditemukan rekaman log kehadiran untuk periode ini.</td></tr>`;
-      } else {
-        filtered.forEach(l => { 
-          var tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-          html += `<tr><td>${tglIndo}</td><td class="text-start fw-semibold">${l.Nama}</td><td class="fw-bold">${l.Status}</td></tr>`; 
-        });
-      }
+      if(filtered.length === 0) { html += `<tr><td colspan="3" class="text-muted p-3">Tidak ditemukan rekaman log.</td></tr>`; } 
+      else { filtered.forEach(l => { 
+        var tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        html += `<tr><td>${tglIndo}</td><td class="text-start fw-semibold">${l.Nama}</td><td class="fw-bold">${l.Status}</td></tr>`; 
+      }); }
       
-      html += `</tbody></table><script>window.print();<\/script></body></html>`;
-      var win = window.open("", "_blank");
-      win.document.write(html);
-      win.document.close();
+      html += `</tbody></table>
+        <div class="mt-5 d-flex justify-content-end" style="max-width:800px; margin: 40px auto 0 auto !important;">
+          <div class="text-center" style="width: 300px;">
+            <p class="mb-1">Mengetahui,</p>
+            <p class="mb-5">Kepala ${namaSch}</p>
+            <br>
+            <h6 class="fw-bold mb-0 text-decoration-underline">${kepsekSch}</h6>
+            <small class="text-muted">NIP. ${nipSch}</small>
+          </div>
+        </div>
+        <script>window.print();<\/script></body></html>`;
+      var win = window.open("", "_blank"); win.document.write(html); win.document.close();
     }
 
     function simpanSiswaBaru() {
@@ -532,18 +538,14 @@
       var nm = document.getElementById("add-siswa-nama").value.trim();
       var k = document.getElementById("add-siswa-kelas").value.trim();
       if(!n || !nm || !k) return alert("Sistem: Lengkapi seluruh kolom input!");
-      
-      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_siswa&nis=${n}&nama=${nm}&kelas=${k}`)
-        .then(r=>r.json()).then(r=>{ alert(r.message); location.reload(); });
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_siswa&nis=${n}&nama=${nm}&kelas=${k}`).then(r=>r.json()).then(r=>{ alert(r.message); location.reload(); });
     }
 
     function simpanGuruBaru() {
       var nm = document.getElementById("add-guru-nama").value.trim();
       var p = document.getElementById("add-guru-pin").value.trim();
       if(!nm || !p) return alert("Sistem: Lengkapi seluruh data nama/PIN!");
-      
-      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_guru&nama=${nm}&pin=${p}`)
-        .then(r=>r.json()).then(r=>{ alert(r.message); location.reload(); });
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=tambah_guru&nama=${nm}&pin=${p}`).then(r=>r.json()).then(r=>{ alert(r.message); location.reload(); });
     }
 
     function keluarSistem() { location.reload(); }

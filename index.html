@@ -631,54 +631,168 @@
     }
 
     function cetakRekapBulanan() {
-      var kls = document.getElementById("guru-set-kelas").value;
-      var mpl = document.getElementById("guru-set-mapel").value;
-      var selectBulan = document.getElementById("guru-set-bulan");
-      var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
-      
-      var namaSch = cacheData.pengaturan ? cacheData.pengaturan.namaSekolah : "Sekolah";
-      var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
-      var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
-      var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
+  var kls = document.getElementById("guru-set-kelas").value;
+  var mpl = document.getElementById("guru-set-mapel").value;
+  var selectBulan = document.getElementById("guru-set-bulan");
+  var blnVal = selectBulan.value;
+  var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
+  
+  var namaSch = cacheData.pengaturan ? cacheData.pengaturan.namaSekolah : "Sekolah";
+  var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
+  var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
+  var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
 
-      var html = `<html><head><title>Rekap Absensi - ${kls}</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="p-5">
-        <div class="text-center border-bottom border-3 pb-2 mb-4">
-          <h2 class="fw-bold text-uppercase mb-0">${namaSch}</h2>
-          <p class="mb-1 fw-semibold text-secondary">Sistem Informasi Absensi Digital Berbasis QR Code & Cloud Database</p>
-          <small class="text-muted">Tahun Ajaran: ${taSch} | Periode Cetak: ${namaBulan}</small>
-        </div>
-        <h4 class="text-center fw-bold text-dark mb-1">REKAPITULASI DATA KEHADIRAN SISWA</h4>
-        <p class="text-center mb-4">Kelas: <b>${kls}</b> | Mata Pelajaran: <b>${mpl}</b></p>
-        <table class="table table-bordered text-center align-middle m-auto" style="max-width:800px;">
-          <thead class="table-dark"><tr><th>Tanggal Absen</th><th>Nama Lengkap Murid</th><th>Status Kehadiran</th></tr></thead>
-          <tbody>`;
-      
-      var bln = selectBulan.value;
-      var filtered = (cacheData.riwayat || []).filter(l => {
-        var cocokKelas = l.Kelas === kls; var cocokMapel = l.Mapel === mpl; var cocokBulan = true;
-        if (bln !== "all" && l.Timestamp) { var tglObj = new Date(l.Timestamp); cocokBulan = tglObj.getMonth().toString() === bln; }
-        return cocokKelas && cocokMapel && cocokBulan;
-      });
-      
-      if(filtered.length === 0) { html += `<tr><td colspan="3" class="text-muted p-3">Tidak ditemukan rekaman log.</td></tr>`; } 
-      else { filtered.forEach(l => { 
-        var tglIndo = new Date(l.Timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        html += `<tr><td>${tglIndo}</td><td class="text-start fw-semibold">${l.Nama}</td><td class="fw-bold">${l.Status}</td></tr>`; 
-      }); }
-      
-      html += `</tbody></table>
-        <div class="mt-5 d-flex justify-content-end" style="max-width:800px; margin: 40px auto 0 auto !important;">
-          <div class="text-center" style="width: 300px;">
-            <p class="mb-1">Mengetahui,</p>
-            <p class="mb-5">Kepala ${namaSch}</p>
-            <br>
-            <h6 class="fw-bold mb-0 text-decoration-underline">${kepsekSch}</h6>
-            <small class="text-muted">NIP. ${nipSch}</small>
-          </div>
-        </div>
-        <script>window.print();<\/script></body></html>`;
-      var win = window.open("", "_blank"); win.document.write(html); win.document.close();
+  // 1. Tentukan jumlah hari berdasarkan bulan (default 30 jika 'Semua Bulan')
+  var tahunAktif = new Date().getFullYear();
+  var jumlahHari = 30;
+  if (blnVal !== "all") {
+    jumlahHari = new Date(tahunAktif, parseInt(blnVal) + 1, 0).getDate();
+  }
+
+  // 2. Filter log absensi yang sesuai kelas & mapel
+  var filteredLog = (cacheData.riwayat || []).filter(l => {
+    var cocokKelas = l.Kelas === kls;
+    var cocokMapel = l.Mapel === mpl;
+    var cocokBulan = true;
+    if (blnVal !== "all" && l.Timestamp) {
+      cocokBulan = new Date(l.Timestamp).getMonth().toString() === blnVal;
     }
+    return cocokKelas && cocokMapel && cocokBulan;
+  });
+
+  // 3. Filter siswa yang terdaftar di kelas ini
+  var daftarSiswaKelas = (cacheData.riwayatSiswa || []).filter(s => s.kelas === kls);
+
+  // 4. Strukturkan data: Map NIS siswa ke tanggal kehadiran
+  var petaKehadiran = {};
+  daftarSiswaKelas.forEach(s => {
+    petaKehadiran[s.nis.toString()] = {
+      nama: s.nama,
+      hari: {},
+      H: 0, I: 0, S: 0, A: 0
+    };
+  });
+
+  // Isi data presensi dari log ke dalam peta struktur
+  filteredLog.forEach(l => {
+    if (l.Nis && petaKehadiran[l.Nis.toString()]) {
+      var tglObj = new Date(l.Timestamp);
+      var tglHari = tglObj.getDate();
+      var status = (l.Status || "").toUpperCase();
+      
+      // Ambil karakter pertama status (H/I/S/A)
+      var inisial = status.substring(0, 1); 
+      petaKehadiran[l.Nis.toString()].hari[tglHari] = inisial;
+      
+      // Hitung akumulasi keterangan
+      if (["H", "I", "S", "A"].includes(inisial)) {
+        petaKehadiran[l.Nis.toString()][inisial]++;
+      }
+    }
+  });
+
+  // 5. Rancang Dokumen HTML Cetak Baru (Format Horizontal/Landscape)
+  var html = `<html><head><title>Rekap Absensi Horizontal - ${kls}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      @page { size: landscape; margin: 15mm; }
+      body { font-family: 'Arial', sans-serif; font-size: 11px; color: #333; }
+      .table-rekap { border: 2px solid #222 !important; }
+      .table-rekap th, .table-rekap td { border: 1px solid #222 !important; padding: 4px 2px !important; vertical-align: middle; text-align: center; }
+      .tgl-col { width: 22px; font-size: 9px; font-weight: bold; }
+      .ket-col { width: 25px; font-weight: bold; background-color: #f0f0f0; }
+      .text-nama { text-align: left !important; padding-left: 6px !important; font-weight: 600; white-space: nowrap; }
+      .status-H { color: #198754; font-weight: bold; }
+      .status-I { color: #ffc107; font-weight: bold; }
+      .status-S { color: #0dcaf0; font-weight: bold; }
+      .status-A { color: #dc3545; font-weight: bold; }
+    </style>
+  </head><body class="p-2">
+    
+    <div class="text-center border-bottom border-2 pb-2 mb-3">
+      <h3 class="fw-bold text-uppercase mb-0">${namaSch}</h3>
+      <p class="mb-0 fw-semibold text-secondary">Rekapitulasi Presensi Murid Secara Berkala (Format Horizontal)</p>
+      <small class="text-muted">Tahun Ajaran: ${taSch} | Periode Bulan: ${namaBulan}</small>
+    </div>
+
+    <div class="d-flex justify-content-between mb-2 fw-bold" style="font-size: 12px;">
+      <div>Kelas: ${kls}</div>
+      <div>Mata Pelajaran: ${mpl}</div>
+    </div>
+
+    <table class="table table-bordered table-sm table-rekap w-100">
+      <thead class="table-dark">
+        <tr>
+          <th rowspan="2" style="width: 40px;">No.</th>
+          <th rowspan="2">Nama Lengkap Murid</th>
+          <th colspan="${jumlahHari}">Tanggal Jalannya Bulan</th>
+          <th colspan="4">Keterangan</th>
+        </tr>
+        <tr>`;
+        
+        // Header Angka Tanggal 1 sampai 30/31
+        for (var d = 1; d <= jumlahHari; d++) {
+          html += `<th class="tgl-col">${d}</th>`;
+        }
+        
+        html += `
+          <th class="ket-col text-success">H</th>
+          <th class="ket-col text-warning">I</th>
+          <th class="ket-col text-info">S</th>
+          <th class="ket-col text-danger">A</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  var nomor = 1;
+  for (var nisKey in petaKehadiran) {
+    var objSiswa = petaKehadiran[nisKey];
+    html += `<tr>
+      <td>${nomor++}</td>
+      <td class="text-nama">${objSiswa.nama}</td>`;
+      
+      // Isi absensi per tanggal
+      for (var h = 1; h <= jumlahHari; h++) {
+        var mark = objSiswa.hari[h] || ""; // Kosong jika tidak ada absen di tgl tsb
+        var cls = mark ? `status-${mark}` : "";
+        html += `<td class="${cls}">${mark}</td>`;
+      }
+      
+      // Isi kolom akumulasi keterangan (H, I, S, A) di bagian paling kanan
+      html += `
+      <td class="bg-light text-success fw-bold">${objSiswa.H || '-'}</td>
+      <td class="bg-light text-dark fw-bold">${objSiswa.I || '-'}</td>
+      <td class="bg-light text-dark fw-bold">${objSiswa.S || '-'}</td>
+      <td class="bg-light text-danger fw-bold">${objSiswa.A || '-'}</td>
+    </tr>`;
+  }
+
+  if (daftarSiswaKelas.length === 0) {
+    html += `<tr><td colspan="${jumlahHari + 6}" class="text-muted p-4 text-center">Tidak ada data siswa terdaftar di kelas ini.</td></tr>`;
+  }
+
+  html += `</tbody></table>
+    
+    <div class="mt-4 d-flex justify-content-end">
+      <div class="text-center" style="width: 250px; font-size: 12px;">
+        <p class="mb-1">Mengetahui,</p>
+        <p class="mb-5">Kepala ${namaSch}</p>
+        <h6 class="fw-bold mb-0 text-decoration-underline">${kepsekSch}</h6>
+        <small class="text-muted">NIP. ${nipSch}</small>
+      </div>
+    </div>
+
+    <script>
+      window.onload = function() {
+        window.print();
+      };
+    <\/script>
+  </body></html>`;
+
+  var win = window.open("", "_blank");
+  win.document.write(html);
+  win.document.close();
+}
 
     function simpanSiswaBaru() {
       var n = document.getElementById("add-siswa-nis").value.trim();

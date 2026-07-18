@@ -27,6 +27,33 @@
     .btn-reset-absen { font-size: 13px; width: 32px; height: 32px; padding: 0; text-align: center; }
     .chart-container { position: relative; height: 220px; width: 100%; }
     .persentase-teks { font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 5px; }
+    /* CSS Tambahan Khusus Optimasi HP */
+@media (max-width: 576px) {
+  body {
+    padding: 5px !important;
+  }
+  .card-login {
+    margin: 40px auto;
+  }
+  /* Mengubah layout card admin agar tidak sempit */
+  .dashboard-panel {
+    padding: 15px !important;
+  }
+  /* Membuat container grafik fleksibel di layar kecil */
+  .chart-container {
+    height: 280px !important;
+  }
+  /* Membuat navigasi tab guru memenuhi layar */
+  #tabGuru .nav-link {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+  /* Ukuran Scanner QR agar pas di layar HP */
+  #reader {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
   </style>
 </head>
 <body>

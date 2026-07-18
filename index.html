@@ -296,7 +296,7 @@
 
   <script>
     // MASUKKAN URL GOOGLE APP SCRIPT WEB APP HASIL DEPLOY TERBARU KAMU DI SINI
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4rhRbzAZFw4kR70f-tFVdbH-VIpTBKCz7SAzLqy-1L_GWt3Woe5B6R5Vc1O8RGhIy/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAFpEOnUBmmAtNpwSvW73sMw0x-Az_I0MU7qI5ZO_HDpukZam3Gvg08c9mAAIHEIrj/exec";
     
     var cacheData = {};
     var namaUserAktif = "";
@@ -601,18 +601,36 @@
     }
 
     async function eksekusiSetSemuaHadir() {
-      var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
-      var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
-      if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
-      if (!confirm(`Set HADIR seluruh ${filteredSiswa.length} siswa?`)) return;
-      
-      var tombol = document.getElementById("btn-set-semua-hadir");
-      tombol.disabled = true; tombol.innerText = "⏳...";
-      for (let i = 0; i < filteredSiswa.length; i++) { await eksekusiAbsen(filteredSiswa[i].nis, "Hadir", true); }
-      alert(`Sistem: Sukses mencatat status HADIR massal!`);
-      tombol.disabled = false; tombol.innerText = "🟢 Set Semua Hadir";
+  var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+  var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
+  
+  if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
+  if (!confirm(`Set HADIR seluruh ${filteredSiswa.length} siswa?`)) return;
+  
+  var tombol = document.getElementById("btn-set-semua-hadir");
+  tombol.disabled = true; 
+  tombol.innerText = "⏳ Memproses...";
+  
+  // Gabungkan semua NIS menjadi satu string dipisahkan koma (Contoh: "242507001,242507002,242507003")
+  var kumpulanNis = filteredSiswa.map(s => s.nis).join(",");
+  var klsAktif = document.getElementById("guru-set-kelas").value;
+  var mplAktif = document.getElementById("guru-set-mapel").value;
+  
+  // Kirim hanya 1 kali HTTP request ke backend!
+  fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${kumpulanNis}&kelas=${klsAktif}&mapel=${mplAktif}&guru=${namaUserAktif}&status=Hadir`)
+    .then(res => res.json())
+    .then(res => {
+      alert(res.message);
+      tombol.disabled = false; 
+      tombol.innerText = "🟢 Set Semua Hadir";
       segarkanDataMaster();
-    }
+    })
+    .catch(err => {
+      alert("Terjadi masalah koneksi atau pembatasan dari server Google.");
+      tombol.disabled = false; 
+      tombol.innerText = "🟢 Set Semua Hadir";
+    });
+}
 
     function simpanPengaturanSekolah() {
       var n = document.getElementById("set-nama-sekolah").value.trim();

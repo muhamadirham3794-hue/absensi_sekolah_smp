@@ -27,33 +27,15 @@
     .btn-reset-absen { font-size: 13px; width: 32px; height: 32px; padding: 0; text-align: center; }
     .chart-container { position: relative; height: 220px; width: 100%; }
     .persentase-teks { font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 5px; }
-    /* CSS Tambahan Khusus Optimasi HP */
-@media (max-width: 576px) {
-  body {
-    padding: 5px !important;
-  }
-  .card-login {
-    margin: 40px auto;
-  }
-  /* Mengubah layout card admin agar tidak sempit */
-  .dashboard-panel {
-    padding: 15px !important;
-  }
-  /* Membuat container grafik fleksibel di layar kecil */
-  .chart-container {
-    height: 280px !important;
-  }
-  /* Membuat navigasi tab guru memenuhi layar */
-  #tabGuru .nav-link {
-    font-size: 12px;
-    padding: 8px 4px;
-  }
-  /* Ukuran Scanner QR agar pas di layar HP */
-  #reader {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-}
+    
+    @media (max-width: 576px) {
+      body { padding: 5px !important; }
+      .card-login { margin: 40px auto; }
+      .dashboard-panel { padding: 15px !important; }
+      .chart-container { height: 280px !important; }
+      #tabGuru .nav-link { font-size: 12px; padding: 8px 4px; }
+      #reader { max-width: 100% !important; height: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -64,6 +46,7 @@
       <button class="btn btn-sm btn-primary fw-bold" onclick="pemicuInstalPWA()">Instal</button>
     </div>
 
+    <!-- PANEL LOGIN -->
     <div id="panel-login" class="card card-login shadow border-0">
       <div class="card-body text-center p-4">
         <h3 class="fw-bold text-primary mb-1">🏫 ABSENSI DIGITAL</h3>
@@ -76,6 +59,7 @@
       </div>
     </div>
 
+    <!-- PANEL ADMIN -->
     <div id="panel-admin" class="dashboard-panel card shadow border-0 p-4 mb-4" style="border-radius:15px;">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
         <div>
@@ -105,8 +89,7 @@
           <h6 class="fw-bold text-secondary mb-2 mb-md-0">📊 Grafik Analisis Kehadiran Siswa</h6>
           
           <div class="d-flex gap-2 w-100 w-md-auto">
-            <select id="admin-chart-kelas" class="form-select form-select-sm fw-semibold" style="max-width: 130px;" onchange="renderAdminStats()">
-              </select>
+            <select id="admin-chart-kelas" class="form-select form-select-sm fw-semibold" style="max-width: 130px;" onchange="renderAdminStats()"></select>
             <select id="admin-chart-bulan" class="form-select form-select-sm fw-semibold" style="max-width: 140px;" onchange="renderAdminStats()">
               <option value="hari-ini">Hari Ini</option>
               <option value="all">-- Semua Bulan --</option>
@@ -145,6 +128,17 @@
         <div class="col-4"><button class="btn btn-primary w-100 fw-semibold rounded-3 py-2 small" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#modalSetting">⚙️ Set Sekolah</button></div>
       </div>
 
+      <!-- TABEL DATA AKUN GURU & PIN DI DASHBOARD ADMIN -->
+      <div class="border p-3 rounded-3 bg-white shadow-sm mb-4">
+        <h6 class="fw-bold mb-2">🔑 Daftar Akun Guru & PIN Login</h6>
+        <div class="table-responsive shadow-sm rounded border" style="max-height: 200px; overflow-y: auto;">
+          <table class="table table-sm table-striped text-center small mb-0 bg-white">
+            <thead class="table-dark"><tr><th>Nama Guru</th><th>PIN Login</th><th>Role</th></tr></thead>
+            <tbody id="tabel-admin-guru"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="border p-3 rounded-3 bg-light shadow-sm">
         <h6 class="fw-bold mb-2">🖨️ Generator QR Code Siswa</h6>
         <div class="row g-2 mb-2">
@@ -164,6 +158,7 @@
       <button class="btn btn-outline-primary btn-sm w-100 mt-3 fw-bold rounded-3" onclick="segarkanDataMaster()">🔄 Sinkronisasi Ulang Data</button>
     </div>
 
+    <!-- PANEL GURU -->
     <div id="panel-guru" class="dashboard-panel card shadow border-0 p-4" style="border-radius:15px;">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
         <div class="overflow-hidden me-2">
@@ -249,7 +244,7 @@
             </select>
           </div>
           <div class="col-md-7 col-12 text-md-end text-start mt-2 mt-md-0">
-            <button class="btn btn-sm btn-success fw-bold me-1 px-3 shadow-sm" onclick="cetakRekapBulanan()">🖨️ Cetak Cetakan Rekap</button>
+            <button class="btn btn-sm btn-success fw-bold me-1 px-3 shadow-sm" onclick="cetakRekapBulanan()">🖨️ Cetak Rekap</button>
             <button class="btn btn-sm btn-outline-secondary px-2" onclick="muatLaporanGuru()">🔄 Segarkan</button>
           </div>
         </div>
@@ -264,6 +259,7 @@
     </div>
   </div>
 
+  <!-- MODAL PENGATURAN -->
   <div class="modal fade" id="modalSetting" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-primary text-white"><h6 class="modal-title fw-bold">⚙️ Pengaturan Identitas Sekolah</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
     <label class="small fw-bold text-muted mb-1">Nama Lembaga / Sekolah:</label>
     <input type="text" id="set-nama-sekolah" class="form-control mb-2">
@@ -276,6 +272,7 @@
     <button class="btn btn-success w-100 fw-bold py-2" onclick="simpanPengaturanSekolah()">Simpan Konfigurasi</button>
   </div></div></div></div>
 
+  <!-- MODAL TAMBAH SISWA -->
   <div class="modal fade" id="modalSiswa" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">➕ Tambah Master Siswa Baru</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body">
     <label class="small fw-bold text-muted mb-1">Nomor Induk Siswa (NIS):</label>
     <input type="text" id="add-siswa-nis" class="form-control mb-2" placeholder="Contoh: 2026001">
@@ -286,6 +283,7 @@
     <button class="btn btn-primary w-100 fw-bold py-2" onclick="simpanSiswaBaru()">Simpan Data Murid</button>
   </div></div></div></div>
 
+  <!-- MODAL TAMBAH GURU -->
   <div class="modal fade" id="modalGuru" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-warning text-dark"><h6 class="modal-title fw-bold">➕ Tambah Hak Akses Guru</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
     <label class="small fw-bold text-dark mb-1">Nama Lengkap Guru:</label>
     <input type="text" id="add-guru-nama" class="form-control mb-2" placeholder="Nama Beserta Gelar">
@@ -295,8 +293,8 @@
   </div></div></div></div>
 
   <script>
-    // MASUKKAN URL GOOGLE APP SCRIPT WEB APP HASIL DEPLOY TERBARU KAMU DI SINI
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAFpEOnUBmmAtNpwSvW73sMw0x-Az_I0MU7qI5ZO_HDpukZam3Gvg08c9mAAIHEIrj/exec";
+    // MASUKKAN URL GOOGLE APP SCRIPT HASIL DEPLOY TERBARU KAMU DI SINI
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTxjnHW1D9r7QXregYc3t1cbrfp68XA45olrsBcgnRe8N5C1yo6_SX08Tusy71_lKG/exec";
     
     var cacheData = {};
     var namaUserAktif = "";
@@ -366,17 +364,26 @@
         });
     }
 
+    // MEMPERTAHANKAN PILIHAN KELAS AGAR TIDAK RESET OTOMATIS
     function buildFilterDropdowns() {
       var kelases = [...new Set((cacheData.riwayatSiswa || []).map(s => s.kelas))];
       var opt = "";
       kelases.forEach(k => { if(k) opt += `<option value="${k}">${k}</option>`; });
       
-      document.getElementById("admin-qr-kelas").innerHTML = opt || "<option>-</option>";
-      document.getElementById("guru-set-kelas").innerHTML = opt || "<option>-</option>";
+      var selectAdminQr = document.getElementById("admin-qr-kelas");
+      var selectGuruSet = document.getElementById("guru-set-kelas");
+      
+      var valAdminQrLama = selectAdminQr.value;
+      var valGuruSetLama = selectGuruSet.value;
+      
+      selectAdminQr.innerHTML = opt || "<option>-</option>";
+      selectGuruSet.innerHTML = opt || "<option>-</option>";
+      
+      if(valAdminQrLama && kelases.includes(valAdminQrLama)) selectAdminQr.value = valAdminQrLama;
+      if(valGuruSetLama && kelases.includes(valGuruSetLama)) selectGuruSet.value = valGuruSetLama;
       
       var optChartKelas = `<option value="all">Semua Kelas</option>` + opt;
       var selectChartKelas = document.getElementById("admin-chart-kelas");
-      
       var valLama = selectChartKelas.value;
       selectChartKelas.innerHTML = optChartKelas;
       if(valLama) selectChartKelas.value = valLama;
@@ -393,20 +400,23 @@
       return cocok ? cocok.status || cocok.Status : "";
     }
 
-    // FUNGSI UTAMA OPSI 1: Menghitung persentase kehadiran akumulatif per murid
-    function hitungPersentaseSiswa(nis) {
-      var logSiswa = (cacheData.riwayat || []).filter(l => l.Nis.toString() === nis.toString());
+    // HITUNG PERSENTASE KEHADIRAN PER MATA PELAJARAN
+    function hitungPersentaseSiswa(nis, mapel) {
+      var logSiswa = (cacheData.riwayat || []).filter(l => 
+        l.Nis.toString() === nis.toString() && 
+        (l.Mapel || "").toLowerCase() === (mapel || "").toLowerCase()
+      );
+      
       if(logSiswa.length === 0) return { teks: "100%", kelasWarna: "bg-success text-white" };
       
-      var totalHadir = logSiswa.filter(l => l.Status.toLowerCase() === "hadir").length;
+      var totalHadir = logSiswa.filter(l => (l.Status || "").toLowerCase() === "hadir").length;
       var persentase = Math.round((totalHadir / logSiswa.length) * 100);
       
-      // Berikan warna indikator peringatan berdasarkan tingkat persentase kehadiran
       var kelasWarna = "bg-success text-white"; // Aman (>85%)
       if(persentase <= 75) {
-        kelasWarna = "bg-danger text-white"; // Waspada/Bahaya (Sering bolos)
+        kelasWarna = "bg-danger text-white"; // Waspada
       } else if(persentase <= 85) {
-        kelasWarna = "bg-warning text-dark"; // Peringatan awal
+        kelasWarna = "bg-warning text-dark"; // Peringatan
       }
       
       return { teks: persentase + "%", kelasWarna: kelasWarna };
@@ -458,6 +468,7 @@
       
       renderGrafikDonut(jmlHadir, jmlIzin, jmlSakit, jmlAlfa, jmlBelumAbsen, filterBulan);
       
+      // Render Log Aktivitas Admin
       var tbody = document.getElementById("log-aktivitas-admin");
       tbody.innerHTML = "";
       var limaTerakhir = (cacheData.riwayat || []).slice(-5).reverse();
@@ -465,6 +476,21 @@
       limaTerakhir.forEach(l => {
         tbody.innerHTML += `<tr><td>${l.Nama}</td><td>${l.Kelas}</td><td>${l.Mapel}</td><td><span class="badge ${getBadgeClass(l.Status)}">${l.Status}</span></td></tr>`;
       });
+
+      // RENDER TABEL DAFTAR GURU & PIN
+      var tbodyGuru = document.getElementById("tabel-admin-guru");
+      if(tbodyGuru) {
+        tbodyGuru.innerHTML = "";
+        var dataUsers = cacheData.users || [];
+        if(dataUsers.length === 0) {
+          tbodyGuru.innerHTML = "<tr><td colspan='3' class='text-muted py-2'>Belum ada data akun guru.</td></tr>";
+        } else {
+          dataUsers.forEach(u => {
+            tbodyGuru.innerHTML += `<tr><td class="text-start ps-3 fw-semibold">${u.nama}</td><td><code>${u.pin}</code></td><td><span class="badge bg-secondary">${u.role}</span></td></tr>`;
+          });
+        }
+      }
+
       muatDaftarQRAdmin();
     }
 
@@ -545,6 +571,7 @@
     function muatSiswaAbsenManual() {
       var tbody = document.getElementById("tabel-guru-manual-body");
       var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+      var mpl = document.getElementById("guru-set-mapel").value;
       tbody.innerHTML = "";
       
       var filtered = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
@@ -554,8 +581,7 @@
         var statusSekarang = dapatkanStatusHariIni(s.nis);
         var indikatorStatus = statusSekarang ? ` <span class="badge ${getBadgeClass(statusSekarang)}">${statusSekarang.substring(0,1)}</span>` : "";
         
-        // INTEGRASI OPSI 1: Ambil data analisis persentase kehadiran murid saat ini
-        var analisisPersentase = hitungPersentaseSiswa(s.nis);
+        var analisisPersentase = hitungPersentaseSiswa(s.nis, mpl);
         
         tbody.innerHTML += `<tr class="baris-siswa-manual">
           <td><strong>${s.nis}</strong></td>
@@ -601,36 +627,34 @@
     }
 
     async function eksekusiSetSemuaHadir() {
-  var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
-  var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
-  
-  if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
-  if (!confirm(`Set HADIR seluruh ${filteredSiswa.length} siswa?`)) return;
-  
-  var tombol = document.getElementById("btn-set-semua-hadir");
-  tombol.disabled = true; 
-  tombol.innerText = "⏳ Memproses...";
-  
-  // Gabungkan semua NIS menjadi satu string dipisahkan koma (Contoh: "242507001,242507002,242507003")
-  var kumpulanNis = filteredSiswa.map(s => s.nis).join(",");
-  var klsAktif = document.getElementById("guru-set-kelas").value;
-  var mplAktif = document.getElementById("guru-set-mapel").value;
-  
-  // Kirim hanya 1 kali HTTP request ke backend!
-  fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${kumpulanNis}&kelas=${klsAktif}&mapel=${mplAktif}&guru=${namaUserAktif}&status=Hadir`)
-    .then(res => res.json())
-    .then(res => {
-      alert(res.message);
-      tombol.disabled = false; 
-      tombol.innerText = "🟢 Set Semua Hadir";
-      segarkanDataMaster();
-    })
-    .catch(err => {
-      alert("Terjadi masalah koneksi atau pembatasan dari server Google.");
-      tombol.disabled = false; 
-      tombol.innerText = "🟢 Set Semua Hadir";
-    });
-}
+      var kls = (document.getElementById("guru-set-kelas").value || "").toLowerCase();
+      var filteredSiswa = (cacheData.riwayatSiswa || []).filter(s => (s.kelas || "").toLowerCase() === kls);
+      
+      if (filteredSiswa.length === 0) return alert("Tidak ada siswa di kelas ini.");
+      if (!confirm(`Set HADIR seluruh ${filteredSiswa.length} siswa?`)) return;
+      
+      var tombol = document.getElementById("btn-set-semua-hadir");
+      tombol.disabled = true; 
+      tombol.innerText = "⏳ Memproses...";
+      
+      var kumpulanNis = filteredSiswa.map(s => s.nis).join(",");
+      var klsAktif = document.getElementById("guru-set-kelas").value;
+      var mplAktif = document.getElementById("guru-set-mapel").value;
+      
+      fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${kumpulanNis}&kelas=${klsAktif}&mapel=${mplAktif}&guru=${namaUserAktif}&status=Hadir`)
+        .then(res => res.json())
+        .then(res => {
+          alert(res.message);
+          tombol.disabled = false; 
+          tombol.innerText = "🟢 Set Semua Hadir";
+          segarkanDataMaster();
+        })
+        .catch(err => {
+          alert("Terjadi masalah koneksi atau pembatasan dari server Google.");
+          tombol.disabled = false; 
+          tombol.innerText = "🟢 Set Semua Hadir";
+        });
+    }
 
     function simpanPengaturanSekolah() {
       var n = document.getElementById("set-nama-sekolah").value.trim();
@@ -676,168 +700,154 @@
     }
 
     function cetakRekapBulanan() {
-  var kls = document.getElementById("guru-set-kelas").value;
-  var mpl = document.getElementById("guru-set-mapel").value;
-  var selectBulan = document.getElementById("guru-set-bulan");
-  var blnVal = selectBulan.value;
-  var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
-  
-  var namaSch = cacheData.pengaturan ? cacheData.pengaturan.namaSekolah : "Sekolah";
-  var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
-  var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
-  var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
-
-  // 1. Tentukan jumlah hari berdasarkan bulan (default 30 jika 'Semua Bulan')
-  var tahunAktif = new Date().getFullYear();
-  var jumlahHari = 30;
-  if (blnVal !== "all") {
-    jumlahHari = new Date(tahunAktif, parseInt(blnVal) + 1, 0).getDate();
-  }
-
-  // 2. Filter log absensi yang sesuai kelas & mapel
-  var filteredLog = (cacheData.riwayat || []).filter(l => {
-    var cocokKelas = l.Kelas === kls;
-    var cocokMapel = l.Mapel === mpl;
-    var cocokBulan = true;
-    if (blnVal !== "all" && l.Timestamp) {
-      cocokBulan = new Date(l.Timestamp).getMonth().toString() === blnVal;
-    }
-    return cocokKelas && cocokMapel && cocokBulan;
-  });
-
-  // 3. Filter siswa yang terdaftar di kelas ini
-  var daftarSiswaKelas = (cacheData.riwayatSiswa || []).filter(s => s.kelas === kls);
-
-  // 4. Strukturkan data: Map NIS siswa ke tanggal kehadiran
-  var petaKehadiran = {};
-  daftarSiswaKelas.forEach(s => {
-    petaKehadiran[s.nis.toString()] = {
-      nama: s.nama,
-      hari: {},
-      H: 0, I: 0, S: 0, A: 0
-    };
-  });
-
-  // Isi data presensi dari log ke dalam peta struktur
-  filteredLog.forEach(l => {
-    if (l.Nis && petaKehadiran[l.Nis.toString()]) {
-      var tglObj = new Date(l.Timestamp);
-      var tglHari = tglObj.getDate();
-      var status = (l.Status || "").toUpperCase();
+      var kls = document.getElementById("guru-set-kelas").value;
+      var mpl = document.getElementById("guru-set-mapel").value;
+      var selectBulan = document.getElementById("guru-set-bulan");
+      var blnVal = selectBulan.value;
+      var namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
       
-      // Ambil karakter pertama status (H/I/S/A)
-      var inisial = status.substring(0, 1); 
-      petaKehadiran[l.Nis.toString()].hari[tglHari] = inisial;
-      
-      // Hitung akumulasi keterangan
-      if (["H", "I", "S", "A"].includes(inisial)) {
-        petaKehadiran[l.Nis.toString()][inisial]++;
+      var namaSch = cacheData.pengaturan ? cacheData.pengaturan.namaSekolah : "Sekolah";
+      var taSch = cacheData.pengaturan ? cacheData.pengaturan.tahunAjaran : "-";
+      var kepsekSch = cacheData.pengaturan ? cacheData.pengaturan.kepsek : "-";
+      var nipSch = cacheData.pengaturan ? cacheData.pengaturan.nipKepsek : "-";
+
+      var tahunAktif = new Date().getFullYear();
+      var jumlahHari = 30;
+      if (blnVal !== "all") {
+        jumlahHari = new Date(tahunAktif, parseInt(blnVal) + 1, 0).getDate();
       }
-    }
-  });
 
-  // 5. Rancang Dokumen HTML Cetak Baru (Format Horizontal/Landscape)
-  var html = `<html><head><title>Rekap Absensi Horizontal - ${kls}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-      @page { size: landscape; margin: 15mm; }
-      body { font-family: 'Arial', sans-serif; font-size: 11px; color: #333; }
-      .table-rekap { border: 2px solid #222 !important; }
-      .table-rekap th, .table-rekap td { border: 1px solid #222 !important; padding: 4px 2px !important; vertical-align: middle; text-align: center; }
-      .tgl-col { width: 22px; font-size: 9px; font-weight: bold; }
-      .ket-col { width: 25px; font-weight: bold; background-color: #f0f0f0; }
-      .text-nama { text-align: left !important; padding-left: 6px !important; font-weight: 600; white-space: nowrap; }
-      .status-H { color: #198754; font-weight: bold; }
-      .status-I { color: #ffc107; font-weight: bold; }
-      .status-S { color: #0dcaf0; font-weight: bold; }
-      .status-A { color: #dc3545; font-weight: bold; }
-    </style>
-  </head><body class="p-2">
-    
-    <div class="text-center border-bottom border-2 pb-2 mb-3">
-      <h3 class="fw-bold text-uppercase mb-0">${namaSch}</h3>
-      <p class="mb-0 fw-semibold text-secondary">Rekapitulasi Presensi Murid Secara Berkala</p>
-      <small class="text-muted">Tahun Ajaran: ${taSch} | Periode Bulan: ${namaBulan}</small>
-    </div>
-
-    <div class="d-flex justify-content-between mb-2 fw-bold" style="font-size: 12px;">
-      <div>Kelas: ${kls}</div>
-      <div>Mata Pelajaran: ${mpl}</div>
-    </div>
-
-    <table class="table table-bordered table-sm table-rekap w-100">
-      <thead class="table-dark">
-        <tr>
-          <th rowspan="2" style="width: 40px;">No.</th>
-          <th rowspan="2">Nama Lengkap Murid</th>
-          <th colspan="${jumlahHari}">Tanggal Jalannya Bulan</th>
-          <th colspan="4">Keterangan</th>
-        </tr>
-        <tr>`;
-        
-        // Header Angka Tanggal 1 sampai 30/31
-        for (var d = 1; d <= jumlahHari; d++) {
-          html += `<th class="tgl-col">${d}</th>`;
+      var filteredLog = (cacheData.riwayat || []).filter(l => {
+        var cocokKelas = l.Kelas === kls;
+        var cocokMapel = l.Mapel === mpl;
+        var cocokBulan = true;
+        if (blnVal !== "all" && l.Timestamp) {
+          cocokBulan = new Date(l.Timestamp).getMonth().toString() === blnVal;
         }
+        return cocokKelas && cocokMapel && cocokBulan;
+      });
+
+      var daftarSiswaKelas = (cacheData.riwayatSiswa || []).filter(s => s.kelas === kls);
+
+      var petaKehadiran = {};
+      daftarSiswaKelas.forEach(s => {
+        petaKehadiran[s.nis.toString()] = {
+          nama: s.nama,
+          hari: {},
+          H: 0, I: 0, S: 0, A: 0
+        };
+      });
+
+      filteredLog.forEach(l => {
+        if (l.Nis && petaKehadiran[l.Nis.toString()]) {
+          var tglObj = new Date(l.Timestamp);
+          var tglHari = tglObj.getDate();
+          var status = (l.Status || "").toUpperCase();
+          var inisial = status.substring(0, 1); 
+          petaKehadiran[l.Nis.toString()].hari[tglHari] = inisial;
+          
+          if (["H", "I", "S", "A"].includes(inisial)) {
+            petaKehadiran[l.Nis.toString()][inisial]++;
+          }
+        }
+      });
+
+      var html = `<html><head><title>Rekap Absensi Horizontal - ${kls}</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+          @page { size: landscape; margin: 15mm; }
+          body { font-family: 'Arial', sans-serif; font-size: 11px; color: #333; }
+          .table-rekap { border: 2px solid #222 !important; }
+          .table-rekap th, .table-rekap td { border: 1px solid #222 !important; padding: 4px 2px !important; vertical-align: middle; text-align: center; }
+          .tgl-col { width: 22px; font-size: 9px; font-weight: bold; }
+          .ket-col { width: 25px; font-weight: bold; background-color: #f0f0f0; }
+          .text-nama { text-align: left !important; padding-left: 6px !important; font-weight: 600; white-space: nowrap; }
+          .status-H { color: #198754; font-weight: bold; }
+          .status-I { color: #ffc107; font-weight: bold; }
+          .status-S { color: #0dcaf0; font-weight: bold; }
+          .status-A { color: #dc3545; font-weight: bold; }
+        </style>
+      </head><body class="p-2">
         
-        html += `
-          <th class="ket-col text-success">H</th>
-          <th class="ket-col text-warning">I</th>
-          <th class="ket-col text-info">S</th>
-          <th class="ket-col text-danger">A</th>
-        </tr>
-      </thead>
-      <tbody>`;
+        <div class="text-center border-bottom border-2 pb-2 mb-3">
+          <h3 class="fw-bold text-uppercase mb-0">${namaSch}</h3>
+          <p class="mb-0 fw-semibold text-secondary">Rekapitulasi Presensi Murid Secara Berkala</p>
+          <small class="text-muted">Tahun Ajaran: ${taSch} | Periode Bulan: ${namaBulan}</small>
+        </div>
 
-  var nomor = 1;
-  for (var nisKey in petaKehadiran) {
-    var objSiswa = petaKehadiran[nisKey];
-    html += `<tr>
-      <td>${nomor++}</td>
-      <td class="text-nama">${objSiswa.nama}</td>`;
-      
-      // Isi absensi per tanggal
-      for (var h = 1; h <= jumlahHari; h++) {
-        var mark = objSiswa.hari[h] || ""; // Kosong jika tidak ada absen di tgl tsb
-        var cls = mark ? `status-${mark}` : "";
-        html += `<td class="${cls}">${mark}</td>`;
+        <div class="d-flex justify-content-between mb-2 fw-bold" style="font-size: 12px;">
+          <div>Kelas: ${kls}</div>
+          <div>Mata Pelajaran: ${mpl}</div>
+        </div>
+
+        <table class="table table-bordered table-sm table-rekap w-100">
+          <thead class="table-dark">
+            <tr>
+              <th rowspan="2" style="width: 40px;">No.</th>
+              <th rowspan="2">Nama Lengkap Murid</th>
+              <th colspan="${jumlahHari}">Tanggal Jalannya Bulan</th>
+              <th colspan="4">Keterangan</th>
+            </tr>
+            <tr>`;
+            
+            for (var d = 1; d <= jumlahHari; d++) {
+              html += `<th class="tgl-col">${d}</th>`;
+            }
+            
+            html += `
+              <th class="ket-col text-success">H</th>
+              <th class="ket-col text-warning">I</th>
+              <th class="ket-col text-info">S</th>
+              <th class="ket-col text-danger">A</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      var nomor = 1;
+      for (var nisKey in petaKehadiran) {
+        var objSiswa = petaKehadiran[nisKey];
+        html += `<tr>
+          <td>${nomor++}</td>
+          <td class="text-nama">${objSiswa.nama}</td>`;
+          
+          for (var h = 1; h <= jumlahHari; h++) {
+            var mark = objSiswa.hari[h] || "";
+            var cls = mark ? `status-${mark}` : "";
+            html += `<td class="${cls}">${mark}</td>`;
+          }
+          
+          html += `
+          <td class="bg-light text-success fw-bold">${objSiswa.H || '-'}</td>
+          <td class="bg-light text-dark fw-bold">${objSiswa.I || '-'}</td>
+          <td class="bg-light text-dark fw-bold">${objSiswa.S || '-'}</td>
+          <td class="bg-light text-danger fw-bold">${objSiswa.A || '-'}</td>
+        </tr>`;
       }
-      
-      // Isi kolom akumulasi keterangan (H, I, S, A) di bagian paling kanan
-      html += `
-      <td class="bg-light text-success fw-bold">${objSiswa.H || '-'}</td>
-      <td class="bg-light text-dark fw-bold">${objSiswa.I || '-'}</td>
-      <td class="bg-light text-dark fw-bold">${objSiswa.S || '-'}</td>
-      <td class="bg-light text-danger fw-bold">${objSiswa.A || '-'}</td>
-    </tr>`;
-  }
 
-  if (daftarSiswaKelas.length === 0) {
-    html += `<tr><td colspan="${jumlahHari + 6}" class="text-muted p-4 text-center">Tidak ada data siswa terdaftar di kelas ini.</td></tr>`;
-  }
+      if (daftarSiswaKelas.length === 0) {
+        html += `<tr><td colspan="${jumlahHari + 6}" class="text-muted p-4 text-center">Tidak ada data siswa terdaftar di kelas ini.</td></tr>`;
+      }
 
-  html += `</tbody></table>
-    
-    <div class="mt-4 d-flex justify-content-end">
-      <div class="text-center" style="width: 250px; font-size: 12px;">
-        <p class="mb-1">Mengetahui,</p>
-        <p class="mb-5">Kepala ${namaSch}</p>
-        <h6 class="fw-bold mb-0 text-decoration-underline">${kepsekSch}</h6>
-        <small class="text-muted">NIP. ${nipSch}</small>
-      </div>
-    </div>
+      html += `</tbody></table>
+        
+        <div class="mt-4 d-flex justify-content-end">
+          <div class="text-center" style="width: 250px; font-size: 12px;">
+            <p class="mb-1">Mengetahui,</p>
+            <p class="mb-5">Kepala ${namaSch}</p>
+            <h6 class="fw-bold mb-0 text-decoration-underline">${kepsekSch}</h6>
+            <small class="text-muted">NIP. ${nipSch}</small>
+          </div>
+        </div>
 
-    <script>
-      window.onload = function() {
-        window.print();
-      };
-    <\/script>
-  </body></html>`;
+        <script>
+          window.onload = function() { window.print(); };
+        <\/script>
+      </body></html>`;
 
-  var win = window.open("", "_blank");
-  win.document.write(html);
-  win.document.close();
-}
+      var win = window.open("", "_blank");
+      win.document.write(html);
+      win.document.close();
+    }
 
     function simpanSiswaBaru() {
       var n = document.getElementById("add-siswa-nis").value.trim();

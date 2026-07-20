@@ -583,6 +583,7 @@
         
         var analisisPersentase = hitungPersentaseSiswa(s.nis, mpl);
         
+        // Hilangkan ${s.nama} dari onclick reset untuk menghindari SyntaxError
         tbody.innerHTML += `<tr class="baris-siswa-manual">
           <td><strong>${s.nis}</strong></td>
           <td class="text-start fw-semibold nama-siswa-kolom">
@@ -595,7 +596,7 @@
               <button class="btn btn-warning btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Izin')">I</button>
               <button class="btn btn-info btn-status-absen rounded-circle me-1 text-dark" onclick="eksekusiAbsen('${s.nis}','Sakit')">S</button>
               <button class="btn btn-danger btn-status-absen rounded-circle me-2" onclick="eksekusiAbsen('${s.nis}','Alfa')">A</button>
-              <button class="btn btn-sm btn-outline-secondary btn-reset-absen rounded-circle" title="Reset Absen Murid Ini" onclick="eksekusiResetAbsen('${s.nis}', '${s.nama}')">🔄</button>
+              <button class="btn btn-sm btn-outline-secondary btn-reset-absen rounded-circle" title="Reset Absen Murid Ini" onclick="eksekusiResetAbsen('${s.nis}')">🔄</button>
             </div>
           </td>
         </tr>`;
@@ -618,12 +619,22 @@
         .then(res => res.json()).then(res => { if(!silent) { alert(res.message); segarkanDataMaster(); } return res; });
     }
 
-    function eksekusiResetAbsen(nis, nama) {
-      if(!confirm(`Batalkan rekaman absensi hari ini untuk: ${nama}?`)) return;
+    function eksekusiResetAbsen(nis) {
+      // Cari data nama siswa dari cache berdasarkan NIS
+      var dataSiswa = (cacheData.riwayatSiswa || []).find(s => s.nis.toString() === nis.toString());
+      var namaSiswa = dataSiswa ? dataSiswa.nama : nis;
+
+      if(!confirm(`Batalkan rekaman absensi hari ini untuk: ${namaSiswa}?`)) return;
+      
       var kls = document.getElementById("guru-set-kelas").value;
       var mpl = document.getElementById("guru-set-mapel").value;
+      
       fetch(`${GOOGLE_SCRIPT_URL}?aksi=absen&nis=${nis}&kelas=${kls}&mapel=${mpl}&status=Reset`)
-        .then(res => res.json()).then(res => { alert(res.message); segarkanDataMaster(); });
+        .then(res => res.json())
+        .then(res => { 
+          alert(res.message); 
+          segarkanDataMaster(); 
+        });
     }
 
     async function eksekusiSetSemuaHadir() {
